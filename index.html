@@ -1,0 +1,2516 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#05070e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>ORBITPULSE: ODYSSEY — Full Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-void: #05070e;
+            --neon-cyan: #00F5D4;
+            --neon-gold: #FFB703;
+            --neon-magenta: #FF2A85;
+            --neon-purple: #9B5DE5;
+        }
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-void);
+            color: #f8fafc;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            height: 100dvh;
+            width: 100vw;
+            touch-action: none;
+        }
+        .font-arcade {
+            font-family: 'Orbitron', sans-serif;
+        }
+        .font-mono-code {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .glass-hud {
+            background: rgba(9, 13, 26, 0.78);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.11);
+        }
+        .neon-btn-cyan {
+            background: linear-gradient(135deg, #00F5D4 0%, #00BBF9 100%);
+            box-shadow: 0 0 25px rgba(0, 245, 212, 0.38);
+        }
+        .neon-btn-gold {
+            background: linear-gradient(135deg, #FFB703 0%, #FB8500 100%);
+            box-shadow: 0 0 25px rgba(255, 183, 3, 0.38);
+        }
+        .neon-btn-purple {
+            background: linear-gradient(135deg, #9B5DE5 0%, #F15BB5 100%);
+            box-shadow: 0 0 25px rgba(155, 93, 229, 0.38);
+        }
+        @keyframes pulse-slow {
+            0%, 100% { transform: scale(1); opacity: 0.94; }
+            50% { transform: scale(1.03); opacity: 1; }
+        }
+        .animate-pulse-slow {
+            animation: pulse-slow 2.2s infinite ease-in-out;
+        }
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(56, 189, 248, 0.4);
+            border-radius: 9999px;
+        }
+    </style>
+</head>
+<body class="relative flex flex-col items-center justify-between">
+
+    <!-- ИГРОВОЙ CANVAS НА ВЕСЬ ЭКРАН -->
+    <canvas id="game-canvas" class="fixed inset-0 w-full h-full z-0"></canvas>
+
+    <!-- УВЕДОМЛЕНИЕ О ДОСТИЖЕНИИ (TOAST) -->
+    <div id="ach-toast" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 pointer-events-none transition-all duration-500 opacity-0 -translate-y-6">
+        <div class="glass-hud border-amber-400/60 bg-slate-950/95 px-4 py-2.5 rounded-2xl shadow-[0_0_30px_rgba(255,183,3,0.4)] flex items-center space-x-3">
+            <span class="text-xl">🏆</span>
+            <div>
+                <div id="ach-toast-label" class="text-[10px] font-mono-code uppercase tracking-widest text-amber-400 font-bold">ДОСТИЖЕНИЕ ОТКРЫТО!</div>
+                <div id="ach-toast-title" class="text-xs font-bold text-white">Первая Орбита (+50 💎)</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ВЕРХНИЙ HUD -->
+    <header class="w-full max-w-md px-3 pt-2.5 z-20 pointer-events-none flex flex-col gap-1.5">
+        <div class="glass-hud rounded-2xl p-2 px-3 flex items-center justify-between pointer-events-auto shadow-lg">
+            <!-- Счет и Рекорд / Прогресс Уровня -->
+            <div class="flex items-center space-x-2.5">
+                <button onclick="openMainMenu()" title="Menu" class="p-1.5 rounded-xl bg-slate-900/90 border border-slate-700 text-slate-300 hover:text-cyan-400 active:scale-95 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+                <div>
+                    <div class="text-[9px] font-mono-code uppercase tracking-wider text-slate-400" id="lbl-score">SCORE</div>
+                    <div id="hud-score" class="font-arcade text-base font-black text-white leading-none">0</div>
+                </div>
+                <div class="h-6 w-px bg-slate-800"></div>
+                <div>
+                    <div class="text-[9px] font-mono-code uppercase tracking-wider text-cyan-400" id="lbl-mode-status">LEVEL 1</div>
+                    <div id="hud-progress" class="font-arcade text-xs font-bold text-cyan-300 leading-none">0%</div>
+                </div>
+            </div>
+
+            <!-- Кристаллы, Язык (6 языков) и Звук -->
+            <div class="flex items-center space-x-1.5">
+                <button onclick="openModal('hangar-modal')" class="px-2 py-1 rounded-xl bg-amber-500/15 border border-amber-400/40 flex items-center space-x-1 text-amber-300 hover:bg-amber-500/25 active:scale-95 transition">
+                    <span class="text-xs">💎</span>
+                    <span id="hud-gems" class="font-mono-code text-xs font-bold">0</span>
+                </button>
+
+                <!-- Переключатель 6 языков: EN, UK, DE, ES, RU, ZH -->
+                <button id="lang-btn" onclick="cycleLanguage()" class="px-2 py-1 rounded-xl bg-slate-900/90 border border-cyan-500/40 text-[11px] font-mono-code font-bold text-cyan-300 hover:bg-slate-800 active:scale-95 transition">
+                    🌐 RU
+                </button>
+
+                <!-- Кнопка звука -->
+                <button id="sound-btn" onclick="toggleSound()" class="p-1.5 rounded-xl bg-slate-900/90 border border-slate-700 text-cyan-400 hover:border-cyan-400 active:scale-95 transition">
+                    <svg id="icon-vol-on" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
+                    </svg>
+                    <svg id="icon-vol-off" class="w-4 h-4 hidden text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Полоса прогресса до Врат Варпа (в Кампании) и комбо-щит -->
+        <div class="flex items-center justify-between gap-2">
+            <div class="glass-hud rounded-xl px-3 py-1.5 flex-1 flex items-center gap-2">
+                <span class="text-xs">🌀</span>
+                <div class="w-full bg-slate-800/90 h-2 rounded-full overflow-hidden">
+                    <div id="warp-progress-bar" class="bg-gradient-to-r from-cyan-400 via-fuchsia-400 to-amber-300 h-full transition-all duration-150" style="width: 0%"></div>
+                </div>
+                <span id="warp-dist-txt" class="font-mono-code text-[10px] text-cyan-300 font-bold shrink-0">0m</span>
+            </div>
+
+            <div id="combo-pill" class="hidden glass-hud rounded-xl px-2.5 py-1 border border-amber-400/50 text-amber-300 font-arcade text-xs font-bold shrink-0">
+                x1
+            </div>
+        </div>
+    </header>
+
+    <!-- ГЛАВНЫЙ ЭКРАН / ЦЕНТР ОДИССЕИ -->
+    <div id="start-overlay" class="fixed inset-0 z-30 flex flex-col items-center justify-center p-4 bg-slate-950/75 backdrop-blur-md overflow-y-auto">
+        <div class="max-w-sm w-full text-center space-y-3.5 my-auto py-2">
+            <!-- Переключатель 6 языков прямо на стартовом экране -->
+            <div class="flex items-center justify-center gap-1 flex-wrap">
+                <button onclick="setLanguage('en')" class="lang-chip px-2 py-0.5 rounded-lg text-[10px] font-mono-code border border-slate-700 bg-slate-900/80 text-slate-300">EN</button>
+                <button onclick="setLanguage('uk')" class="lang-chip px-2 py-0.5 rounded-lg text-[10px] font-mono-code border border-slate-700 bg-slate-900/80 text-slate-300">UA</button>
+                <button onclick="setLanguage('de')" class="lang-chip px-2 py-0.5 rounded-lg text-[10px] font-mono-code border border-slate-700 bg-slate-900/80 text-slate-300">DE</button>
+                <button onclick="setLanguage('es')" class="lang-chip px-2 py-0.5 rounded-lg text-[10px] font-mono-code border border-slate-700 bg-slate-900/80 text-slate-300">ES</button>
+                <button onclick="setLanguage('ru')" class="lang-chip px-2 py-0.5 rounded-lg text-[10px] font-mono-code border border-slate-700 bg-slate-900/80 text-slate-300">RU</button>
+                <button onclick="setLanguage('zh')" class="lang-chip px-2 py-0.5 rounded-lg text-[10px] font-mono-code border border-slate-700 bg-slate-900/80 text-slate-300">中文</button>
+            </div>
+
+            <div>
+                <div class="inline-block px-2.5 py-0.5 rounded-full bg-cyan-500/15 border border-cyan-400/40 text-cyan-300 font-mono-code text-[10px] uppercase tracking-widest mb-1" id="ui-edition-tag">
+                    ASTRAL CAMPAIGN • 15 LEVELS • 6 LANGUAGES
+                </div>
+                <h1 class="font-arcade text-3xl sm:text-4xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-white to-fuchsia-400 drop-shadow-[0_0_25px_rgba(0,245,212,0.35)]">
+                    ORBITPULSE
+                </h1>
+                <p id="start-subtitle" class="text-[11px] font-mono-code uppercase tracking-widest text-amber-300 font-bold">
+                    ODYSSEY OF CORE-7
+                </p>
+            </div>
+
+            <!-- Карточка Лор-Хроники (Краткий брифинг) -->
+            <div class="glass-hud rounded-2xl p-3 text-left border border-cyan-500/30 space-y-1.5">
+                <div class="flex items-center justify-between">
+                    <span id="ui-story-header" class="text-[10px] font-mono-code uppercase text-cyan-400 font-bold">📡 ПРОТОКОЛ «ЭТЕЛЬГАРД»</span>
+                    <span id="ui-stars-total" class="text-[11px] font-mono-code text-amber-300 font-bold">⭐ 0/45</span>
+                </div>
+                <p id="ui-story-intro" class="text-xs text-slate-200 leading-relaxed">
+                    После Великого Молчания Звёздная Сеть погасла. Ты — разумный фотонный зонд CORE-7. Зацепляйся за грави-узлы, разгоняйся в золотых дугах и зажги 15 секторов Вселенной!
+                </p>
+            </div>
+
+            <!-- Основные кнопки запуска -->
+            <div class="space-y-2">
+                <button onclick="openCampaignModal()" id="btn-campaign" class="w-full py-3.5 rounded-2xl neon-btn-cyan text-slate-950 font-arcade font-black text-sm uppercase tracking-wider active:scale-95 transition animate-pulse-slow flex items-center justify-center gap-2">
+                    <span>🪐</span>
+                    <span id="txt-btn-campaign">КАМПАНИЯ: 15 УРОВНЕЙ</span>
+                </button>
+
+                <button onclick="startEndlessMode()" id="btn-endless" class="w-full py-3 rounded-2xl neon-btn-purple text-white font-arcade font-bold text-xs uppercase tracking-wider active:scale-95 transition flex items-center justify-center gap-2">
+                    <span>∞</span>
+                    <span id="txt-btn-endless">БЕСКОНЕЧНАЯ ОДИССЕЯ</span>
+                </button>
+
+                <div class="grid grid-cols-3 gap-2 pt-1">
+                    <button onclick="openModal('hangar-modal')" class="py-2.5 px-2 rounded-xl glass-hud hover:bg-slate-800/80 text-amber-300 border border-amber-400/30 font-mono-code font-bold text-[11px] uppercase active:scale-95 transition">
+                        🛸 <span id="txt-btn-hangar">АНГАР</span>
+                    </button>
+                    <button onclick="openModal('ach-modal')" class="py-2.5 px-2 rounded-xl glass-hud hover:bg-slate-800/80 text-cyan-300 border border-cyan-400/30 font-mono-code font-bold text-[11px] uppercase active:scale-95 transition">
+                        🏆 <span id="txt-btn-ach">ТРОФЕИ</span>
+                    </button>
+                    <button onclick="openModal('apk-modal')" class="py-2.5 px-2 rounded-xl glass-hud hover:bg-slate-800/80 text-emerald-300 border border-emerald-400/30 font-mono-code font-bold text-[11px] uppercase active:scale-95 transition">
+                        📦 <span id="txt-btn-apk">APK</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО: КАРТА КАМПАНИИ (15 УРОВНЕЙ В 3 СЕКТОРАХ) -->
+    <div id="campaign-modal" class="fixed inset-0 z-40 hidden items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+        <div class="glass-hud rounded-3xl max-w-md w-full p-4 border border-slate-700 max-h-[88vh] flex flex-col justify-between">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2.5 mb-3">
+                <div>
+                    <h3 id="camp-modal-title" class="font-arcade text-base font-bold text-white">ЗВЁЗДНАЯ КАРТА СЕКТОРОВ</h3>
+                    <p id="camp-modal-sub" class="text-xs text-slate-400">Пройди врата варпа на вершине каждого сектора</p>
+                </div>
+                <button onclick="closeModal('campaign-modal')" class="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white">✕</button>
+            </div>
+
+            <div id="campaign-sectors-list" class="space-y-4 overflow-y-auto pr-1 flex-1">
+                <!-- Генерируется динамически -->
+            </div>
+
+            <div class="mt-3 pt-2.5 border-t border-slate-800 flex justify-end">
+                <button onclick="closeModal('campaign-modal')" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-arcade font-bold text-xs uppercase">
+                    ← НАЗАД
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО: СЮЖЕТНАЯ ТРАНСМИССИЯ ПЕРЕД УРОВНЕМ -->
+    <div id="story-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/90 backdrop-blur-lg">
+        <div class="glass-hud rounded-3xl max-w-sm w-full p-5 border border-cyan-400/50 shadow-[0_0_40px_rgba(0,245,212,0.2)] space-y-4">
+            <div class="flex items-center justify-between">
+                <span id="story-log-id" class="px-2.5 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400/40 text-cyan-300 font-mono-code text-[10px] font-bold">
+                    ASTRAL LOG #01
+                </span>
+                <span id="story-sector-badge" class="text-[11px] font-mono-code text-amber-300">SECTOR 1</span>
+            </div>
+
+            <h3 id="story-level-title" class="font-arcade text-lg font-black text-white">1. Колыбель Света</h3>
+
+            <div class="bg-slate-950/90 border border-slate-800 rounded-2xl p-3.5 min-h-[96px] flex items-center">
+                <p id="story-lore-text" class="text-xs text-slate-200 leading-relaxed font-mono-code"></p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 text-left bg-slate-900/70 p-2.5 rounded-xl border border-slate-800 text-[11px] font-mono-code">
+                <div><span class="text-slate-400" id="lbl-target-dist">ЦЕЛЬ:</span> <strong id="story-target-dist" class="text-cyan-300">1200m</strong></div>
+                <div><span class="text-slate-400" id="lbl-hazard-type">УГРОЗА:</span> <strong id="story-hazard-info" class="text-rose-400">Импульсы</strong></div>
+            </div>
+
+            <button onclick="launchSelectedCampaignLevel()" id="btn-launch-mission" class="w-full py-3.5 rounded-2xl neon-btn-cyan text-slate-950 font-arcade font-black text-xs uppercase tracking-wider active:scale-95 transition">
+                ЗАПУСТИТЬ ЯДРО →
+            </button>
+        </div>
+    </div>
+
+    <!-- ЭКРАН ПОБЕДЫ / ПРОХОЖДЕНИЯ УРОВНЯ (LEVEL COMPLETE) -->
+    <div id="victory-overlay" class="fixed inset-0 z-40 hidden flex-col items-center justify-center p-5 bg-slate-950/85 backdrop-blur-md">
+        <div class="glass-hud rounded-3xl max-w-sm w-full p-6 text-center border border-emerald-400/50 shadow-[0_0_40px_rgba(16,185,129,0.25)] space-y-4">
+            <div id="vic-badge" class="inline-block px-3 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 font-mono-code text-[10px] uppercase tracking-widest">
+                ВРАТА ВАРПА ПРОЙДЕНЫ!
+            </div>
+            <h2 id="vic-title" class="font-arcade text-2xl font-black text-white">СЕКТОР ЗАЖЖЁН</h2>
+
+            <!-- 3 Звезды -->
+            <div id="vic-stars" class="flex items-center justify-center space-x-3 text-3xl py-1">
+                <span>⭐</span><span>⭐</span><span>⭐</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+                <div class="bg-slate-900/90 border border-slate-800 p-2.5 rounded-xl">
+                    <div class="text-[10px] font-mono-code text-slate-400" id="vic-lbl-score">СЧЕТ</div>
+                    <div id="vic-val-score" class="font-arcade text-lg font-extrabold text-white mt-0.5">0</div>
+                </div>
+                <div class="bg-slate-900/90 border border-slate-800 p-2.5 rounded-xl">
+                    <div class="text-[10px] font-mono-code text-slate-400" id="vic-lbl-gems">НАГРАДА</div>
+                    <div id="vic-val-gems" class="font-arcade text-lg font-extrabold text-amber-400 mt-0.5">+50 💎</div>
+                </div>
+            </div>
+
+            <div class="flex gap-2">
+                <button onclick="openCampaignModal()" class="flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-mono-code font-bold text-xs uppercase transition">
+                    🗺️ КАРТА
+                </button>
+                <button onclick="playNextCampaignLevel()" id="btn-next-lvl" class="flex-[2] py-3 rounded-xl neon-btn-cyan text-slate-950 font-arcade font-black text-xs uppercase tracking-wider active:scale-95 transition">
+                    СЛЕД. УРОВЕНЬ →
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ЭКРАН GAME OVER С КНОПКОЙ ВТОРОГО ШАНСА -->
+    <div id="gameover-overlay" class="fixed inset-0 z-40 hidden flex-col items-center justify-center p-5 bg-slate-950/85 backdrop-blur-md">
+        <div class="glass-hud rounded-3xl max-w-sm w-full p-6 text-center border border-slate-700/80 shadow-2xl space-y-4">
+            <div id="go-badge" class="inline-block px-3 py-0.5 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-300 font-mono-code text-[10px] uppercase tracking-widest">
+                СИГНАЛ ПРЕРВАН
+            </div>
+            <h2 id="go-title" class="font-arcade text-2xl font-black text-white">ПОТЕРЯ ОРБИТЫ</h2>
+
+            <div class="grid grid-cols-3 gap-2">
+                <div class="bg-slate-900/90 border border-slate-800 p-2.5 rounded-xl">
+                    <div id="go-lbl-score" class="text-[10px] font-mono-code text-slate-400">СЧЕТ</div>
+                    <div id="go-val-score" class="font-arcade text-base font-extrabold text-white mt-0.5">0</div>
+                </div>
+                <div class="bg-slate-900/90 border border-slate-800 p-2.5 rounded-xl">
+                    <div id="go-lbl-alt" class="text-[10px] font-mono-code text-slate-400">ДИСТАНЦИЯ</div>
+                    <div id="go-val-alt" class="font-arcade text-base font-extrabold text-cyan-400 mt-0.5">0m</div>
+                </div>
+                <div class="bg-slate-900/90 border border-slate-800 p-2.5 rounded-xl">
+                    <div id="go-lbl-gems" class="text-[10px] font-mono-code text-slate-400">ДОБЫТО</div>
+                    <div id="go-val-gems" class="font-arcade text-base font-extrabold text-amber-400 mt-0.5">+0 💎</div>
+                </div>
+            </div>
+
+            <button id="btn-revive" onclick="revivePlayer()" class="w-full py-3.5 rounded-2xl neon-btn-gold text-slate-950 font-arcade font-extrabold text-xs uppercase tracking-wider flex items-center justify-center space-x-2 active:scale-95 transition">
+                <span id="txt-revive-btn">⚡ ВТОРОЙ ШАНС (ЩИТ + ПРОДОЛЖИТЬ)</span>
+            </button>
+
+            <div class="flex gap-2">
+                <button onclick="openMainMenu()" class="flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono-code font-bold text-xs uppercase transition">
+                    🏠 МЕНЮ
+                </button>
+                <button onclick="retryCurrentRun()" id="btn-retry" class="flex-[2] py-3 rounded-xl neon-btn-cyan text-slate-950 font-arcade font-black text-xs uppercase tracking-wider active:scale-95 transition">
+                    ЗАНОВО ↻
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО: АНГАР (УЛУЧШЕНИЯ RPG + 6 СКИНОВ) -->
+    <div id="hangar-modal" class="fixed inset-0 z-40 hidden items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+        <div class="glass-hud rounded-3xl max-w-md w-full p-5 border border-slate-700 max-h-[88vh] flex flex-col justify-between">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2.5 mb-3">
+                <div>
+                    <h3 id="shop-title" class="font-arcade text-base font-bold text-white">АНГАР И ТЕХНОЛОГИИ</h3>
+                    <p class="text-xs text-amber-300 font-mono-code">💎 <span id="hangar-gems-count">0</span></p>
+                </div>
+                <button onclick="closeModal('hangar-modal')" class="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white">✕</button>
+            </div>
+
+            <div class="overflow-y-auto pr-1 space-y-4 flex-1">
+                <!-- Блок 1: 4 RPG-модуля прокачки -->
+                <div>
+                    <div id="lbl-upgrades-sec" class="text-[10px] font-mono-code uppercase tracking-wider text-cyan-400 font-bold mb-2">⚙️ ПРОКАЧКА СИСТЕМ ЯДРА:</div>
+                    <div id="upgrades-grid" class="grid grid-cols-1 gap-2"></div>
+                </div>
+
+                <!-- Блок 2: 6 Скинов и Кометных Хвостов -->
+                <div>
+                    <div id="lbl-skins-sec" class="text-[10px] font-mono-code uppercase tracking-wider text-amber-400 font-bold mb-2">🛸 ОБОЛОЧКИ ЯДРА (6):</div>
+                    <div id="skins-grid" class="grid grid-cols-2 gap-2"></div>
+                </div>
+            </div>
+
+            <div class="mt-3 pt-2.5 border-t border-slate-800 flex items-center justify-between gap-2">
+                <button onclick="addPrototypeGems()" class="px-3 py-2 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-300 font-mono-code text-[11px] font-bold hover:bg-amber-500/30 transition">
+                    +300 💎 (Бонус)
+                </button>
+                <button onclick="closeModal('hangar-modal')" class="flex-1 py-2.5 rounded-xl bg-cyan-500 text-slate-950 font-arcade font-bold text-xs uppercase">
+                    ГОТОВО
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО: 12 ДОСТИЖЕНИЙ -->
+    <div id="ach-modal" class="fixed inset-0 z-40 hidden items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+        <div class="glass-hud rounded-3xl max-w-md w-full p-5 border border-slate-700 max-h-[88vh] flex flex-col justify-between">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2.5 mb-3">
+                <div>
+                    <h3 id="ach-modal-title" class="font-arcade text-base font-bold text-white">ЗАЛ ДОСТИЖЕНИЙ (12)</h3>
+                    <p id="ach-modal-sub" class="text-xs text-slate-400">Каждое достижение приносит кристаллы 💎</p>
+                </div>
+                <button onclick="closeModal('ach-modal')" class="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white">✕</button>
+            </div>
+
+            <div id="ach-list" class="space-y-2 overflow-y-auto pr-1 flex-1"></div>
+
+            <button onclick="closeModal('ach-modal')" class="mt-3 w-full py-2.5 rounded-xl bg-cyan-500 text-slate-950 font-arcade font-bold text-xs uppercase">
+                ЗАКРЫТЬ
+            </button>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО: ЭКСПОРТ В APK / GOOGLE PLAY -->
+    <div id="apk-modal" class="fixed inset-0 z-40 hidden items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+        <div class="glass-hud rounded-3xl max-w-md w-full p-5 border border-emerald-500/40 max-h-[88vh] flex flex-col justify-between">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2.5 mb-3">
+                <div>
+                    <h3 class="font-arcade text-sm font-bold text-emerald-300">📦 УПАКОВКА В .APK И GOOGLE PLAY</h3>
+                    <p class="text-[11px] text-slate-400">Экспорт готовых конфигураций для Android</p>
+                </div>
+                <button onclick="closeModal('apk-modal')" class="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white">✕</button>
+            </div>
+
+            <div class="overflow-y-auto pr-1 space-y-3 text-xs text-slate-200 leading-relaxed flex-1">
+                <p>Эта игра полностью автономна (все текстуры, 15 уровней, 6 языков и синтезатор звука встроены в один файл). Вы можете скачать готовые файлы манифеста прямо отсюда:</p>
+
+                <div class="grid grid-cols-1 gap-2">
+                    <button onclick="downloadManifestFile()" class="p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-cyan-500/40 text-left flex items-center justify-between transition">
+                        <div>
+                            <div class="font-mono-code font-bold text-cyan-300">1. Скачать manifest.json (PWA)</div>
+                            <div class="text-[11px] text-slate-400">Нужен для сборки .APK и .AAB через PWABuilder</div>
+                        </div>
+                        <span class="text-lg">⬇️</span>
+                    </button>
+
+                    <button onclick="downloadCapacitorConfig()" class="p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-amber-500/40 text-left flex items-center justify-between transition">
+                        <div>
+                            <div class="font-mono-code font-bold text-amber-300">2. Скачать capacitor.config.json</div>
+                            <div class="text-[11px] text-slate-400">Конфиг пакета com.orbitpulse.odyssey для Android Studio</div>
+                        </div>
+                        <span class="text-lg">⬇️</span>
+                    </button>
+                </div>
+
+                <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1.5 text-[11px] text-slate-300">
+                    <div class="font-mono-code text-emerald-400 font-bold">БЫСТРЫЙ СПОСОБ БЕЗ КОДА (5 МИНУТ):</div>
+                    <div>1. Опубликуйте этот файл <code class="text-cyan-300">index.html</code> и <code class="text-cyan-300">manifest.json</code> на бесплатном хостинге <strong>Netlify Drop</strong> (просто перетащите папку в браузер на <em>app.netlify.com/drop</em>).</div>
+                    <div>2. Вставьте полученную ссылку на сайте <strong>PWABuilder.com</strong> → нажмите <strong>Package for Stores → Android</strong>.</div>
+                    <div>3. Скачайте готовый архив: внутри будет <strong>.APK</strong> (для установки на телефон) и <strong>.AAB + ключ подписи</strong> (для загрузки в Google Play Console).</div>
+                </div>
+            </div>
+
+            <button onclick="closeModal('apk-modal')" class="mt-3 w-full py-2.5 rounded-xl bg-emerald-500 text-slate-950 font-arcade font-bold text-xs uppercase">
+                ПОНЯТНО
+            </button>
+        </div>
+    </div>
+
+    <!-- НИЖНЯЯ ПОДСКАЗКА В ПОЛЕТЕ -->
+    <footer class="w-full max-w-md px-4 pb-2.5 z-20 pointer-events-none text-center">
+        <div id="flight-hint" class="text-[10px] font-mono-code text-slate-400/80 tracking-wider uppercase">
+            HOLD SCREEN OR SPACEBAR TO ORBIT • RELEASE IN GOLD ZONE
+        </div>
+    </footer>
+
+    <script>
+        /* =========================================================================
+           1. ПОЛНАЯ ЛОКАЛИЗАЦИЯ НА 6 ЯЗЫКОВ (EN, UK, DE, ES, RU, ZH)
+           ========================================================================= */
+        const LANG_ORDER = ['ru', 'uk', 'en', 'de', 'es', 'zh'];
+
+        const I18N = {
+            ru: {
+                score: "СЧЕТ",
+                editionTag: "КАМПАНИЯ • 15 УРОВНЕЙ • 6 ЯЗЫКОВ",
+                subtitle: "ОДИССЕЯ ЗОНДА CORE-7",
+                storyHeader: "📡 ПРОТОКОЛ «ЭТЕЛЬГАРД»",
+                storyIntro: "После Великого Молчания Звёздная Сеть погасла. Ты — разумный фотонный зонд CORE-7. Зацепляйся за грави-узлы, разгоняйся в золотых дугах и зажги 15 секторов Вселенной!",
+                btnCampaign: "КАМПАНИЯ: 15 УРОВНЕЙ",
+                btnEndless: "БЕСКОНЕЧНАЯ ОДИССЕЯ",
+                btnHangar: "АНГАР",
+                btnAch: "ТРОФЕИ",
+                btnApk: "APK",
+                campTitle: "ЗВЁЗДНАЯ КАРТА СЕКТОРОВ",
+                campSub: "Достигни Врат Варпа на вершине каждого сектора",
+                targetDist: "ЦЕЛЬ:",
+                hazardType: "УГРОЗА:",
+                launchMission: "ЗАПУСТИТЬ ЯДРО →",
+                vicBadge: "ВРАТА ВАРПА ПРОЙДЕНЫ!",
+                vicTitle: "СЕКТОР ЗАЖЖЁН",
+                nextLvl: "СЛЕД. УРОВЕНЬ →",
+                goBadge: "СИГНАЛ ПРЕРВАН",
+                goTitle: "ПОТЕРЯ ОРБИТЫ",
+                goAlt: "ДИСТАНЦИЯ",
+                goGems: "ДОБЫТО",
+                reviveBtn: "⚡ ВТОРОЙ ШАНС (ЩИТ + ПРОДОЛЖИТЬ)",
+                retryBtn: "ЗАНОВО ↻",
+                shopTitle: "АНГАР И ТЕХНОЛОГИИ",
+                upgradesSec: "⚙️ ПРОКАЧКА СИСТЕМ ЯДРА:",
+                skinsSec: "🛸 ОБОЛОЧКИ ЯДРА (6):",
+                achTitle: "ЗАЛ ДОСТИЖЕНИЙ (12)",
+                achSub: "Каждое достижение приносит кристаллы 💎",
+                achToastLabel: "ДОСТИЖЕНИЕ ОТКРЫТО!",
+                hintHold: "УДЕРЖИВАЙ ЭКРАН ИЛИ ПРОБЕЛ ДЛЯ ОРБИТЫ • ОТПУСКАЙ В ЗОЛОТОЙ ДУГЕ",
+                selected: "ВЫБРАН",
+                select: "ВЫБРАТЬ",
+                maxed: "МАКС.",
+                perfectPopup: "ИДЕАЛЬНО!",
+                shieldSmash: "ТАРАН +100!",
+                speedBoost: "ГИПЕР-КОЛЬЦО!",
+                slingshot: "РЫВОК",
+                sectorNames: ["СЕКТОР I: НЕОНОВАЯ КОЛЫБЕЛЬ", "СЕКТОР II: РАЗЛОМ СИНГУЛЯРНОСТИ", "СЕКТОР III: ЦИТАДЕЛЬ ПУЛЬСАРОВ"]
+            },
+            uk: {
+                score: "РАХУНОК",
+                editionTag: "КАМПАНІЯ • 15 РІВНІВ • 6 МОВ",
+                subtitle: "ОДІССЕЯ ЗОНДА CORE-7",
+                storyHeader: "📡 ПРОТОКОЛ «ЕТЕЛЬГАРД»",
+                storyIntro: "Після Великого Мовчання Зоряна Мережа згасла. Ти — розумний фотонний зонд CORE-7. Чіпляйся за граві-вузли, розганяйся в золотих дугах і запали 15 секторів Всесвіту!",
+                btnCampaign: "КАМПАНІЯ: 15 РІВНІВ",
+                btnEndless: "НЕСКІНЧЕННА ОДІССЕЯ",
+                btnHangar: "АНГАР",
+                btnAch: "ТРОФЕЇ",
+                btnApk: "APK",
+                campTitle: "ЗОРЯНА КАРТА СЕКТОРІВ",
+                campSub: "Дійди до Брами Варпу на вершині кожного рівня",
+                targetDist: "ЦІЛЬ:",
+                hazardType: "ЗАГРОЗА:",
+                launchMission: "ЗАПУСТИТИ ЯДРО →",
+                vicBadge: "БРАМУ ВАРПУ ПРОЙДЕНО!",
+                vicTitle: "СЕКТОР ЗАПАЛЕНО",
+                nextLvl: "НАСТ. РІВЕНЬ →",
+                goBadge: "СИГНАЛ ПЕРЕРВАНО",
+                goTitle: "ВТРАТА ОРБІТИ",
+                goAlt: "ДИСТАНЦІЯ",
+                goGems: "ЗДОБУТО",
+                reviveBtn: "⚡ ДРУГИЙ ШАНС (ЩИТ + ПРОДОВЖИТИ)",
+                retryBtn: "ЗАНОВО ↻",
+                shopTitle: "АНГАР ТА ТЕХНОЛОГІЇ",
+                upgradesSec: "⚙️ ПРОКАЧУВАННЯ СИСТЕМ ЯДРА:",
+                skinsSec: "🛸 ОБОЛОНКИ ЯДРА (6):",
+                achTitle: "ЗАЛА ДОСЯГНЕНЬ (12)",
+                achSub: "Кожне досягнення дарує кристали 💎",
+                achToastLabel: "ДОСЯГНЕННЯ ВІДКРИТО!",
+                hintHold: "УТРИМУЙ ЕКРАН АБО ПРОБІЛ ДЛЯ ОРБІТИ • ВІДПУСКАЙ У ЗОЛОТІЙ ДУЗІ",
+                selected: "ОБРАНО",
+                select: "ОБРАТИ",
+                maxed: "МАКС.",
+                perfectPopup: "ІДЕАЛЬНО!",
+                shieldSmash: "ТАРАН +100!",
+                speedBoost: "ГІПЕР-КІЛЬЦЕ!",
+                slingshot: "РИВОК",
+                sectorNames: ["СЕКТОР I: НЕОНОВА КОЛИСКА", "СЕКТОР II: РОЗЛОМ СИНГУЛЯРНОСТІ", "СЕКТОР III: ЦИТАДЕЛЬ ПУЛЬСАРІВ"]
+            },
+            en: {
+                score: "SCORE",
+                editionTag: "CAMPAIGN • 15 LEVELS • 6 LANGUAGES",
+                subtitle: "ODYSSEY OF CORE-7",
+                storyHeader: "📡 AETHELGARD PROTOCOL",
+                storyIntro: "After the Great Silence, the Astral Grid went dark. You are CORE-7, a sentient photon probe. Tether to gravity nodes, slingshot through golden arcs, and reignite 15 cosmic sectors!",
+                btnCampaign: "CAMPAIGN: 15 LEVELS",
+                btnEndless: "ENDLESS ODYSSEY",
+                btnHangar: "HANGAR",
+                btnAch: "TROPHIES",
+                btnApk: "APK",
+                campTitle: "STAR CHART SECTORS",
+                campSub: "Reach the Warp Portal at the top of each sector",
+                targetDist: "TARGET:",
+                hazardType: "HAZARD:",
+                launchMission: "LAUNCH CORE-7 →",
+                vicBadge: "WARP GATE CLEARED!",
+                vicTitle: "SECTOR REIGNITED",
+                nextLvl: "NEXT LEVEL →",
+                goBadge: "SIGNAL LOST",
+                goTitle: "ORBIT DECAYED",
+                goAlt: "DISTANCE",
+                goGems: "MINED",
+                reviveBtn: "⚡ SECOND CHANCE (SHIELD + CONTINUE)",
+                retryBtn: "RETRY ↻",
+                shopTitle: "HANGAR & TECH LAB",
+                upgradesSec: "⚙️ CORE TECH UPGRADES:",
+                skinsSec: "🛸 PROBE SKINS (6):",
+                achTitle: "HALL OF TROPHIES (12)",
+                achSub: "Every achievement rewards Stardust Gems 💎",
+                achToastLabel: "ACHIEVEMENT UNLOCKED!",
+                hintHold: "HOLD SCREEN OR SPACEBAR TO ORBIT • RELEASE IN GOLD ZONE",
+                selected: "EQUIPPED",
+                select: "EQUIP",
+                maxed: "MAXED",
+                perfectPopup: "PERFECT!",
+                shieldSmash: "SMASH +100!",
+                speedBoost: "HYPER RING!",
+                slingshot: "SLINGSHOT",
+                sectorNames: ["SECTOR I: NEON CRADLE", "SECTOR II: SINGULARITY RIFT", "SECTOR III: PULSAR CITADEL"]
+            },
+            de: {
+                score: "PUNKTE",
+                editionTag: "KAMPAGNE • 15 LEVEL • 6 SPRACHEN",
+                subtitle: "ODYSSEE VON CORE-7",
+                storyHeader: "📡 AETHELGARD-PROTOKOLL",
+                storyIntro: "Nach der Großen Stille erlosch das Astrale Netz. Du bist CORE-7, eine intelligente Photonensonde. Kopple an Gravitationsknoten und entzünde 15 Sektoren des Kosmos!",
+                btnCampaign: "KAMPAGNE: 15 LEVEL",
+                btnEndless: "ENDLOSE ODYSSEE",
+                btnHangar: "HANGAR",
+                btnAch: "ERFOLGE",
+                btnApk: "APK",
+                campTitle: "STERNENKARTE DER SEKTOREN",
+                campSub: "Erreiche das Warp-Portal am Ende jedes Sektors",
+                targetDist: "ZIEL:",
+                hazardType: "GEFAHR:",
+                launchMission: "KERN STARTEN →",
+                vicBadge: "WARP-TOR DURCHQUERT!",
+                vicTitle: "SEKTOR AKTIVIERT",
+                nextLvl: "NÄCHSTES LEVEL →",
+                goBadge: "SIGNAL VERLOREN",
+                goTitle: "ORBIT VERFEHLT",
+                goAlt: "DISTANZ",
+                goGems: "KRISTALLE",
+                reviveBtn: "⚡ ZWEITE CHANCE (SCHILD + WEITER)",
+                retryBtn: "NEUSTART ↻",
+                shopTitle: "HANGAR & TECH-LABOR",
+                upgradesSec: "⚙️ SYSTEM-UPGRADES:",
+                skinsSec: "🛸 SONDEN-SKINS (6):",
+                achTitle: "RUHMESHALLE (12)",
+                achSub: "Jeder Erfolg bringt Kristalle 💎",
+                achToastLabel: "ERFOLG FREIGESCHALTET!",
+                hintHold: "HALTEN FÜR ORBIT • IM GOLDENEN SEKTOR LOSLASSEN",
+                selected: "AKTIV",
+                select: "WÄHLEN",
+                maxed: "MAX",
+                perfectPopup: "PERFEKT!",
+                shieldSmash: "CRASH +100!",
+                speedBoost: "HYPER-RING!",
+                slingshot: "SCHUB",
+                sectorNames: ["SEKTOR I: NEON-WIEGE", "SEKTOR II: SINGULARITÄTS-SPALT", "SEKTOR III: PULSAR-ZITADELLE"]
+            },
+            es: {
+                score: "PUNTOS",
+                editionTag: "CAMPAÑA • 15 NIVELES • 6 IDIOMAS",
+                subtitle: "LA ODISEA DE CORE-7",
+                storyHeader: "📡 PROTOCOLO AETHELGARD",
+                storyIntro: "Tras el Gran Silencio, la Red Astral se apagó. Eres CORE-7, una sonda fotónica consciente. ¡Engánchate a los nodos gravitatorios y enciende 15 sectores del cosmos!",
+                btnCampaign: "CAMPAÑA: 15 NIVELES",
+                btnEndless: "ODISEA INFINITA",
+                btnHangar: "HANGAR",
+                btnAch: "LOGROS",
+                btnApk: "APK",
+                campTitle: "MAPA ESTELAR DE SECTORES",
+                campSub: "Alcanza el Portal Warp en la cima de cada nivel",
+                targetDist: "META:",
+                hazardType: "PELIGRO:",
+                launchMission: "LANZAR NÚCLEO →",
+                vicBadge: "¡PORTAL WARP CRUZADO!",
+                vicTitle: "SECTOR ENCENDIDO",
+                nextLvl: "SIGUIENTE NIVEL →",
+                goBadge: "SEÑAL PERDIDA",
+                goTitle: "ÓRBITA CAÍDA",
+                goAlt: "DISTANCIA",
+                goGems: "GEMAS",
+                reviveBtn: "⚡ SEGUNDA OPORTUNIDAD (ESCUDO + SEGUIR)",
+                retryBtn: "REINTENTAR ↻",
+                shopTitle: "HANGAR Y LABORATORIO",
+                upgradesSec: "⚙️ MEJORAS DEL NÚCLEO:",
+                skinsSec: "🛸 DISEÑOS DE SONDA (6):",
+                achTitle: "SALÓN DE TROFEOS (12)",
+                achSub: "Cada logro otorga gemas estelares 💎",
+                achToastLabel: "¡LOGRO DESBLOQUEADO!",
+                hintHold: "MANTÉN PULSADO PARA ORBITAR • SUELTA EN EL ARCO DORADO",
+                selected: "EQUIPADO",
+                select: "ELEGIR",
+                maxed: "MÁX",
+                perfectPopup: "¡PERFECTO!",
+                shieldSmash: "¡IMPACTO +100!",
+                speedBoost: "¡HIPER-ANILLO!",
+                slingshot: "IMPULSO",
+                sectorNames: ["SECTOR I: CUNA DE NEÓN", "SECTOR II: GRIETA SINGULAR", "SECTOR III: CIUDADELA PÚLSAR"]
+            },
+            zh: {
+                score: "得分",
+                editionTag: "剧情战役 • 15个关卡 • 6种语言",
+                subtitle: "核心7号 (CORE-7) 奥德赛",
+                storyHeader: "📡 艾瑟尔加德协议",
+                storyIntro: "在大寂静之后，星界网络陷入黑暗。你是拥有意识的光子探测器 CORE-7。抓住引力节点，在黄金弧线中弹射，重新点亮15个宇宙星区！",
+                btnCampaign: "星际战役：15个关卡",
+                btnEndless: "无尽奥德赛模式",
+                btnHangar: "机库升级",
+                btnAch: "成就殿堂",
+                btnApk: "安卓安装包",
+                campTitle: "星区折跃星图",
+                campSub: "抵达每个星区顶端的折跃传送门",
+                targetDist: "目标距离:",
+                hazardType: "星区威胁:",
+                launchMission: "发射光子核心 →",
+                vicBadge: "成功穿越折跃门！",
+                vicTitle: "星区已重新点亮",
+                nextLvl: "下一关卡 →",
+                goBadge: "信号中断",
+                goTitle: "偏离轨道",
+                goAlt: "飞行高度",
+                goGems: "收集晶石",
+                reviveBtn: "⚡ 第二次机会 (护盾 + 继续飞行)",
+                retryBtn: "重新挑战 ↻",
+                shopTitle: "光子机库与科技树",
+                upgradesSec: "⚙️ 核心系统永久升级:",
+                skinsSec: "🛸 探测器涂装与尾迹 (6):",
+                achTitle: "荣誉成就殿堂 (12)",
+                achSub: "解锁每项成就均可获得星尘晶石 💎",
+                achToastLabel: "解锁新成就！",
+                hintHold: "按住屏幕或空格键进入轨道 • 在黄金区域松开弹射",
+                selected: "已装备",
+                select: "装备",
+                maxed: "已满级",
+                perfectPopup: "完美弹射!",
+                shieldSmash: "护盾粉碎 +100!",
+                speedBoost: "超光速环!",
+                slingshot: "弹射",
+                sectorNames: ["第一星区：霓虹摇篮", "第二星区：奇点裂隙", "第三星区：脉冲星堡垒"]
+            }
+        };
+
+        /* =========================================================================
+           2. 15 УРОВНЕЙ КАМПАНИИ С ИСТОРИЕЙ И УНИКАЛЬНЫМИ МЕХАНИКАМИ
+           ========================================================================= */
+        const CAMPAIGN_LEVELS = [
+            // СЕКТОР 1: НЕОНОВАЯ КОЛЫБЕЛЬ (Уровни 1-5)
+            {
+                id: 1, sector: 0, dist: 1200, reward: 40,
+                hazardKey: { ru: "Обучение", uk: "Навчання", en: "Calibration", de: "Kalibrierung", es: "Calibración", zh: "轨道校准" },
+                name: { ru: "1. Пробуждение Искры", uk: "1. Пробудження Іскри", en: "1. Spark Awakening", de: "1. Funken-Erwachen", es: "1. Despertar Chispa", zh: "1. 火花觉醒" },
+                lore: {
+                    ru: "ЛОГ ИИ #01: «Ядро CORE-7 активно. Внешние миры погружены во тьму уже 400 лет. Зацепись за первый грави-узел и подай импульс к ретранслятору Колыбели».",
+                    uk: "ЛОГ ШІ #01: «Ядро CORE-7 активне. Зовнішні світи занурені в темряву вже 400 років. Зачепися за перший граві-вузол і подай імпульс до ретранслятора Колиски».",
+                    en: "AI LOG #01: 'CORE-7 online. The outer worlds have been dark for 400 cycles. Latch onto the first gravity node and send a pulse to the Cradle Relay.'",
+                    de: "KI-LOG #01: 'CORE-7 online. Die Außenwelten liegen seit 400 Zyklen im Dunkeln. Kopple an den ersten Knoten und sende einen Impuls zum Relais.'",
+                    es: "LOG IA #01: 'CORE-7 en línea. Los mundos exteriores llevan 400 ciclos a oscuras. Engánchate al primer nodo y envía un pulso al Relé Cuna.'",
+                    zh: "AI日志 #01：“CORE-7已上线。外层世界已陷入黑暗400个周期。抓住第一个引力节点，向摇篮中继站发送脉冲信号。”"
+                },
+                cfg: { hazardChance: 0.15, movingNodes: 0, laserChance: 0, speedRings: 0.35, blackHoles: 0 }
+            },
+            {
+                id: 2, sector: 0, dist: 1500, reward: 50,
+                hazardKey: { ru: "Квантовые Кольца", uk: "Квантові Кільця", en: "Speed Rings", de: "Temposchleifen", es: "Anillos Warp", zh: "超光速环" },
+                name: { ru: "2. Пояс Фотон-Ветра", uk: "2. Пояс Фотон-Вітру", en: "2. Photon Wind Belt", de: "2. Photonenwind-Gürtel", es: "2. Cinturón Fotónico", zh: "2. 光子风带" },
+                lore: {
+                    ru: "ЛОГ ИИ #02: «Мы вошли в поток изумрудных ускорителей. Пролетай сквозь бирюзовые гипер-кольца, чтобы удваивать скорость подъема к Вратам».",
+                    uk: "ЛОГ ШІ #02: «Ми увійшли в потік смарагдових прискорювачів. Пролітай крізь бірюзові гіпер-кільця, щоб подвоювати швидкість підйому».",
+                    en: "AI LOG #02: 'Entering the emerald accelerator stream. Fly through cyan Hyper-Rings to surge upward toward the Warp Gate.'",
+                    de: "KI-LOG #02: 'Wir erreichen den Beschleunigerstrom. Fliege durch türkise Hyper-Ringe, um mit doppelter Kraft aufzusteigen.'",
+                    es: "LOG IA #02: 'Entrando en la corriente aceleradora. Cruza los Hiper-Anillos turquesa para duplicar tu impulso ascendente.'",
+                    zh: "AI日志 #02：“正在进入翡翠加速流。穿过青色超光速环，以双倍推进力冲向折跃门。”"
+                },
+                cfg: { hazardChance: 0.28, movingNodes: 0.15, laserChance: 0, speedRings: 0.65, blackHoles: 0 }
+            },
+            {
+                id: 3, sector: 0, dist: 1800, reward: 60,
+                hazardKey: { ru: "Дрейфующие Узлы", uk: "Дрейфуючі Вузли", en: "Drifting Nodes", de: "Drift-Knoten", es: "Nodos Móviles", zh: "漂移节点" },
+                name: { ru: "3. Осколки Эфира", uk: "3. Уламки Ефіру", en: "3. Shards of Aether", de: "3. Äther-Splitter", es: "3. Fragmentos de Éter", zh: "3. 以太碎片" },
+                lore: {
+                    ru: "ЛОГ ИИ #03: «Гравитационные якоря этого сектора сорваны с орбит и дрейфуют из стороны в сторону. Рассчитывай угол отрыва заранее!»",
+                    uk: "ЛОГ ШІ #03: «Гравітаційні якорі цього сектору зірвані з орбіт і дрейфують. Розраховуй кут відриву заздалегідь!»",
+                    en: "AI LOG #03: 'The gravity anchors in this sector have broken loose and drift horizontally. Time your golden release carefully!'",
+                    de: "KI-LOG #03: 'Die Gravitationsanker sind losgerissen und driften seitwärts. Plane deinen goldenen Abwurf präzise!'",
+                    es: "LOG IA #03: 'Los anclajes gravitatorios se han soltado y derivan horizontalmente. ¡Calcula tu lanzamiento dorado!'",
+                    zh: "AI日志 #03：“该星区的引力锚已脱离原位并横向漂移。请精准把握黄金释放时机！”"
+                },
+                cfg: { hazardChance: 0.38, movingNodes: 0.55, laserChance: 0, speedRings: 0.4, blackHoles: 0 }
+            },
+            {
+                id: 4, sector: 0, dist: 2100, reward: 75,
+                hazardKey: { ru: "Рой Пульсаров", uk: "Рій Пульсарів", en: "Pulsar Swarm", de: "Pulsar-Schwarm", es: "Enjambre Púlsar", zh: "脉冲星群" },
+                name: { ru: "4. Застава Стражей", uk: "4. Застава Вартових", en: "4. Sentinel Outpost", de: "4. Wächter-Außenposten", es: "4. Puesto Centinela", zh: "4. 哨兵前哨" },
+                lore: {
+                    ru: "ЛОГ ИИ #04: «Автоматические красные дроны-пульсары приняли нас за вирус. Заряжай золотой Щит идеальным пуском и круши их на таране!»",
+                    uk: "ЛОГ ШІ #04: «Автоматичні червоні дрони-пульсари сприйняли нас за вірус. Заряджай золотий Щит ідеальним пуском і тарань їх!»",
+                    en: "AI LOG #04: 'Automated red pulsar drones flagged us as an anomaly. Charge your Golden Shield with a Perfect Slingshot and smash right through them!'",
+                    de: "KI-LOG #04: 'Rote Wächterdrohnen blockieren den Weg. Lade deinen goldenen Schild mit einem perfekten Abwurf und durchbrich sie!'",
+                    es: "LOG IA #04: 'Los drones púlsar rojos nos detectan como anomalía. ¡Carga tu Escudo Dorado con un tiro perfecto y destrúyelos!'",
+                    zh: "AI日志 #04：“红色脉冲哨兵将我们视为异常。通过完美弹射充能黄金护盾，直接撞碎它们！”"
+                },
+                cfg: { hazardChance: 0.65, movingNodes: 0.35, laserChance: 0.15, speedRings: 0.35, blackHoles: 0.15 }
+            },
+            {
+                id: 5, sector: 0, dist: 2500, reward: 120,
+                hazardKey: { ru: "БОСС СЕКТОРА I", uk: "БОС СЕКТОРУ I", en: "SECTOR I BOSS", de: "SEKTOR-I-BOSS", es: "JEFE SECTOR I", zh: "第一星区首领" },
+                name: { ru: "5. Врата Гипериона", uk: "5. Брама Гіперіона", en: "5. Hyperion Gate", de: "5. Hyperion-Tor", es: "5. Puerta de Hiperión", zh: "5. 亥伯龙星门" },
+                lore: {
+                    ru: "ЛОГ ИИ #05: «Впереди Главный Маяк Первого Сектора! Лазерные заслонки Гипериона активны. Прорвись к порталу, чтобы зажечь созвездие Колыбели!»",
+                    uk: "ЛОГ ШІ #05: «Попереду Головний Маяк Першого Сектору! Лазерні заслінки Гіперіона активні. Прорвися до порталу!»",
+                    en: "AI LOG #05: 'Approaching the Sector I Prime Beacon! Hyperion laser shutters are active. Breach the summit portal to ignite the Neon Cradle!'",
+                    de: "KI-LOG #05: 'Das Hauptleuchtfeuer von Sektor I liegt vor uns! Überwinde die Laserschranken von Hyperion!'",
+                    es: "LOG IA #05: '¡Faro Principal del Sector I a la vista! Las barreras láser de Hiperión están activas. ¡Cruza el portal!'",
+                    zh: "AI日志 #05：“即将抵达第一星区主信标！亥伯龙激光屏障已启动，突破顶端传送门点亮霓虹摇篮！”"
+                },
+                cfg: { hazardChance: 0.68, movingNodes: 0.45, laserChance: 0.45, speedRings: 0.5, blackHoles: 0.2 }
+            },
+
+            // СЕКТОР 2: РАЗЛОМ СИНГУЛЯРНОСТИ (Уровни 6-10)
+            {
+                id: 6, sector: 1, dist: 2400, reward: 90,
+                hazardKey: { ru: "Черные Дыры", uk: "Чорні Діри", en: "Gravity Wells", de: "Schwarze Löcher", es: "Pozos Gravitatorios", zh: "引力黑洞" },
+                name: { ru: "6. Горизонт Событий", uk: "6. Горизонт Подій", en: "6. Event Horizon", de: "6. Ereignishorizont", es: "6. Horizonte de Sucesos", zh: "6. 事件视界" },
+                lore: {
+                    ru: "ЛОГ ИИ #06: «Мы в Разломе Сингулярности. Фиолетовые гравитационные колодцы искривляют траекторию свободного полета. Используй их притяжение в свою пользу».",
+                    uk: "ЛОГ ШІ #06: «Ми в Розломі Сингулярності. Фіолетові гравітаційні колодязі викривляють траєкторію польоту».",
+                    en: "AI LOG #06: 'Welcome to the Singularity Rift. Purple gravity wells bend your free-flight trajectory. Use their pull to curve around obstacles.'",
+                    de: "KI-LOG #06: 'Willkommen im Singularitäts-Spalt. Violette Gravitationsfelder krümmen deine Flugbahn.'",
+                    es: "LOG IA #06: 'Bienvenido a la Grieta Singular. Los pozos púrpura curvan tu vuelo libre. Usa su atracción a tu favor.'",
+                    zh: "AI日志 #06：“进入奇点裂隙。紫色引力井会弯曲你的自由飞行轨迹，利用引力绕过障碍。”"
+                },
+                cfg: { hazardChance: 0.5, movingNodes: 0.4, laserChance: 0.25, speedRings: 0.35, blackHoles: 0.6 }
+            },
+            {
+                id: 7, sector: 1, dist: 2700, reward: 100,
+                hazardKey: { ru: "Лазерные Шлюзы", uk: "Лазерні Шлюзи", en: "Laser Gates", de: "Laserschranken", es: "Esclusas Láser", zh: "脉冲激光闸" },
+                name: { ru: "7. Квантовый Лабиринт", uk: "7. Квантовий Лабіринт", en: "7. Quantum Labyrinth", de: "7. Quanten-Labyrinth", es: "7. Laberinto Cuántico", zh: "7. 量子迷宫" },
+                lore: {
+                    ru: "ЛОГ ИИ #07: «Древние защитные лучи перекрывают туннель каждые несколько секунд. Проходи их в фазе погасания либо под защитой Золотого Щита».",
+                    uk: "ЛОГ ШІ #07: «Давні захисні промені перекривають тунель. Проходь їх у фазі згасання або під Золотим Щитом».",
+                    en: "AI LOG #07: 'Ancient containment beams cycle on and off across the corridor. Slip through when they dim or smash through with a Shield!'",
+                    de: "KI-LOG #07: 'Alte Eindämmungsstrahlen pulsieren im Korridor. Fliege hindurch, wenn sie abklingen, oder nutze deinen Schild!'",
+                    es: "LOG IA #07: 'Rayos de contención antiguos pulsan en el corredor. Cruza cuando se apaguen o usa tu Escudo Dorado.'",
+                    zh: "AI日志 #07：“古老的封锁光束在走廊中周期性闪烁。趁光束熄灭时穿过，或开启护盾强行突破！”"
+                },
+                cfg: { hazardChance: 0.55, movingNodes: 0.45, laserChance: 0.7, speedRings: 0.4, blackHoles: 0.35 }
+            },
+            {
+                id: 8, sector: 1, dist: 3000, reward: 110,
+                hazardKey: { ru: "Быстрые Орбиты", uk: "Швидкі Орбіти", en: "Hyper Orbits", de: "Hyper-Orbits", es: "Hiper-Órbitas", zh: "高速轨道" },
+                name: { ru: "8. Резонанс Теслы", uk: "8. Резонанс Тесли", en: "8. Tesla Resonance", de: "8. Tesla-Resonanz", es: "8. Resonancia Tesla", zh: "8. 特斯拉共振" },
+                lore: {
+                    ru: "ЛОГ ИИ #08: «В этом секторе преобладают золотые сверхпроводящие звезды. Вращение вокруг них на 35% быстрее — реакция решает всё!»",
+                    uk: "ЛОГ ШІ #08: «У цьому секторі переважають золоті надпровідні зірки. Обертання навколо них на 35% швидше!»",
+                    en: "AI LOG #08: 'Superconducting golden stars dominate this sector. Orbit velocity is 35% faster here—trust your reflexes!'",
+                    de: "KI-LOG #08: 'Goldene Supraleiter-Sterne dominieren diesen Sektor. Die Umlaufgeschwindigkeit ist um 35% erhöht!'",
+                    es: "LOG IA #08: 'Estrellas doradas superconductoras dominan el sector. ¡La velocidad orbital es un 35% mayor!'",
+                    zh: "AI日志 #08：“超导黄金恒星主导着这片区域。轨道旋转速度提升了35%，全凭你的直觉反应！”"
+                },
+                cfg: { hazardChance: 0.6, movingNodes: 0.6, laserChance: 0.4, speedRings: 0.6, blackHoles: 0.4 }
+            },
+            {
+                id: 9, sector: 1, dist: 3300, reward: 125,
+                hazardKey: { ru: "Грави-Шторм", uk: "Граві-Шторм", en: "Gravity Storm", de: "Gravitationssturm", es: "Tormenta Gravitatoria", zh: "引力风暴" },
+                name: { ru: "9. Зеркало Бездны", uk: "9. Дзеркало Безодні", en: "9. Abyssal Mirror", de: "9. Spiegel des Abgrunds", es: "9. Espejo del Abismo", zh: "9. 深渊之镜" },
+                lore: {
+                    ru: "ЛОГ ИИ #09: «Мы почти у ядра Разлома. Плотность кристаллов максимальна, но каждый узел окружен патрульными пульсарами».",
+                    uk: "ЛОГ ШІ #09: «Ми майже біля ядра Розлому. Щільність кристалів максимальна, але кожен вузол оточений пульсарами».",
+                    en: "AI LOG #09: 'Nearing the core of the Rift. Crystal density is at peak levels, but patrol pulsars guard every node.'",
+                    de: "KI-LOG #09: 'Wir nähern uns dem Kern des Spalts. Hohe Kristalldichte, aber Pulsare bewachen jeden Knoten.'",
+                    es: "LOG IA #09: 'Cerca del núcleo de la Grieta. Máxima densidad de gemas, pero los púlsares vigilan cada nodo.'",
+                    zh: "AI日志 #09：“接近裂隙核心。晶石密度达到顶峰，但巡逻脉冲星守卫着每一个节点。”"
+                },
+                cfg: { hazardChance: 0.78, movingNodes: 0.65, laserChance: 0.55, speedRings: 0.45, blackHoles: 0.55 }
+            },
+            {
+                id: 10, sector: 1, dist: 3600, reward: 180,
+                hazardKey: { ru: "БОСС СЕКТОРА II", uk: "БОС СЕКТОРУ II", en: "SECTOR II BOSS", de: "SEKTOR-II-BOSS", es: "JEFE SECTOR II", zh: "第二星区首领" },
+                name: { ru: "10. Сердце Квазара", uk: "10. Серце Квазара", en: "10. Quasar Heart", de: "10. Quasar-Herz", es: "10. Corazón de Cuásar", zh: "10. 类星体之心" },
+                lore: {
+                    ru: "ЛОГ ИИ #10: «Сингулярный Квазар пытается затянуть CORE-7 обратно. Удерживай серию идеальных пусков, чтобы пробить гравитационный барьер!»",
+                    uk: "ЛОГ ШІ #10: «Сингулярний Квазар намагається затягнути CORE-7 назад. Утримуй серію ідеальних пусків!»",
+                    en: "AI LOG #10: 'The Quasar Singularity is pulling CORE-7 back. Chain Perfect Slingshots to shatter the containment barrier!'",
+                    de: "KI-LOG #10: 'Der Quasar zieht CORE-7 zurück. Verkette perfekte Abwürfe, um die Barriere zu durchbrechen!'",
+                    es: "LOG IA #10: 'El Cuásar intenta arrastrar a CORE-7. ¡Encadena tiros perfectos para romper la barrera!'",
+                    zh: "AI日志 #10：“奇点类星体正试图将CORE-7拉回。连续触发完美弹射，冲破引力封锁线！”"
+                },
+                cfg: { hazardChance: 0.82, movingNodes: 0.7, laserChance: 0.65, speedRings: 0.55, blackHoles: 0.65 }
+            },
+
+            // СЕКТОР 3: ЦИТАДЕЛЬ ПУЛЬСАРОВ (Уровни 11-15)
+            {
+                id: 11, sector: 2, dist: 3500, reward: 140,
+                hazardKey: { ru: "Двойные Лазеры", uk: "Подвійні Лазери", en: "Twin Lasers", de: "Doppellaser", es: "Láseres Gemelos", zh: "双重激光" },
+                name: { ru: "11. Внешний Бастион", uk: "11. Зовнішній Бастіон", en: "11. Outer Bastion", de: "11. Äußere Bastion", es: "11. Bastión Exterior", zh: "11. 外层壁垒" },
+                lore: {
+                    ru: "ЛОГ ИИ #11: «Добро пожаловать в Цитадель Пульсаров — последний рубеж перед Центральным Солнцем. Здесь выживают только мастера орбитального ритма».",
+                    uk: "ЛОГ ШІ #11: «Ласкаво просимо до Цитаделі Пульсарів — останнього рубежу перед Центральним Сонцем!»",
+                    en: "AI LOG #11: 'Entering the Pulsar Citadel—the final frontier before the Central Sun. Only masters of orbital flow survive here.'",
+                    de: "KI-LOG #11: 'Willkommen in der Pulsar-Zitadelle – der letzten Grenze vor der Zentralsonne!'",
+                    es: "LOG IA #11: 'Entrando en la Ciudadela Púlsar, la última frontera antes del Sol Central.'",
+                    zh: "AI日志 #11：“已进入脉冲星堡垒——中央太阳前的最后防线。唯有轨道韵律大师方能在此生存。”"
+                },
+                cfg: { hazardChance: 0.8, movingNodes: 0.75, laserChance: 0.75, speedRings: 0.5, blackHoles: 0.5 }
+            },
+            {
+                id: 12, sector: 2, dist: 3800, reward: 160,
+                hazardKey: { ru: "Турбо-Дрейф", uk: "Турбо-Дрейф", en: "Turbo Drift", de: "Turbo-Drift", es: "Turbo-Deriva", zh: "极速漂移" },
+                name: { ru: "12. Хроно-Спираль", uk: "12. Хроно-Спіраль", en: "12. Chrono Spiral", de: "12. Chrono-Spirale", es: "12. Espiral Crono", zh: "12. 时空螺旋" },
+                lore: {
+                    ru: "ЛОГ ИИ #12: «Время внутри Хроно-Спирали течет неравномерно. Используй микро-замедление золотых дуг для идеальной навигации».",
+                    uk: "ЛОГ ШІ #12: «Час усередині Хроно-Спіралі плине нерівномірно. Використовуй золоті дуги для навігації».",
+                    en: "AI LOG #12: 'Time flows unevenly inside the Chrono Spiral. Use the golden arc slow-motion burst to thread the needle.'",
+                    de: "KI-LOG #12: 'Die Zeit fließt in der Chrono-Spirale ungleichmäßig. Nutze den Zeitlupen-Impuls der goldenen Zone!'",
+                    es: "LOG IA #12: 'El tiempo fluye desigual en la Espiral Crono. Usa la cámara lenta del arco dorado.'",
+                    zh: "AI日志 #12：“时空螺旋内的时间流速不均。善用黄金弧线的微慢动作爆发精准穿针引线。”"
+                },
+                cfg: { hazardChance: 0.85, movingNodes: 0.85, laserChance: 0.7, speedRings: 0.6, blackHoles: 0.6 }
+            },
+            {
+                id: 13, sector: 2, dist: 4100, reward: 180,
+                hazardKey: { ru: "Плазменный Шторм", uk: "Плазмовий Шторм", en: "Plasma Tempest", de: "Plasmasturm", es: "Tempestad Plasma", zh: "等离子风暴" },
+                name: { ru: "13. Кузница Сверхновых", uk: "13. Кузня Наднових", en: "13. Supernova Forge", de: "13. Supernova-Schmiede", es: "13. Forja Supernova", zh: "13. 超新星熔炉" },
+                lore: {
+                    ru: "ЛОГ ИИ #13: «Температура вокруг зашкаливает. В Кузнице Сверхновых рождаются новые звезды — собери максимум кристаллов для финального рывка!»",
+                    uk: "ЛОГ ШІ #13: «У Кузні Наднових народжуються нові зірки — збери максимум кристалів для фінального ривка!»",
+                    en: "AI LOG #13: 'New stars are forged in this furnace. Harvest maximum Stardust Gems to upgrade CORE-7 for the final ascent!'",
+                    de: "KI-LOG #13: 'In dieser Schmiede entstehen neue Sterne. Sammle Kristalle für den letzten Aufstieg!'",
+                    es: "LOG IA #13: 'Aquí nacen nuevas estrellas. ¡Reúne el máximo de gemas para el ascenso final!'",
+                    zh: "AI日志 #13：“新恒星在此熔炉中诞生。收集尽可能多的星尘晶石，为最终升空做好准备！”"
+                },
+                cfg: { hazardChance: 0.88, movingNodes: 0.8, laserChance: 0.8, speedRings: 0.65, blackHoles: 0.65 }
+            },
+            {
+                id: 14, sector: 2, dist: 4400, reward: 200,
+                hazardKey: { ru: "Предел Света", uk: "Межа Світла", en: "Light Threshold", de: "Lichtgrenze", es: "Umbral de Luz", zh: "光速临界" },
+                name: { ru: "14. Преддверие Короны", uk: "14. Переддень Корони", en: "14. Corona Threshold", de: "14. Korona-Schwelle", es: "14. Umbral de la Corona", zh: "14. 日冕前夕" },
+                lore: {
+                    ru: "ЛОГ ИИ #14: «Остался один переход до Центрального Солнца Этельгарда. Все защитные системы древней сети работают на пределе!»",
+                    uk: "ЛОГ ШІ #14: «Залишився один перехід до Центрального Сонця Етельгарда. Усі системи працюють на межі!»",
+                    en: "AI LOG #14: 'One sector remains before the Central Sun of Aethelgard. All ancient defense grids are firing at maximum capacity!'",
+                    de: "KI-LOG #14: 'Nur noch ein Sektor bis zur Zentralsonne von Aethelgard. Alle Abwehrsysteme laufen auf Maximum!'",
+                    es: "LOG IA #14: 'Solo queda un sector antes del Sol Central de Aethelgard. ¡Las defensas están al máximo!'",
+                    zh: "AI日志 #14：“距离艾瑟尔加德中央太阳仅剩最后一个星区。所有远古防御阵列均已全功率开启！”"
+                },
+                cfg: { hazardChance: 0.92, movingNodes: 0.88, laserChance: 0.85, speedRings: 0.7, blackHoles: 0.7 }
+            },
+            {
+                id: 15, sector: 2, dist: 4800, reward: 500,
+                hazardKey: { ru: "ФИНАЛЬНЫЙ БОСС", uk: "ФІНАЛЬНИЙ БОС", en: "FINALOMEGA GATE", de: "FINALES OMEGA-TOR", es: "PORTAL OMEGA FINAL", zh: "终极奥米伽星门" },
+                name: { ru: "15. Сердце Этельгарда", uk: "15. Серце Етельгарда", en: "15. Heart of Aethelgard", de: "15. Herz von Aethelgard", es: "15. Corazón de Aethelgard", zh: "15. 艾瑟尔加德之心" },
+                lore: {
+                    ru: "ЛОГ ИИ #15 (ФИНАЛ): «Вот оно — Первичное Светило. Донеси фотонный заряд CORE-7 до Омега-Портала, и вся Галактика вспыхнет вновь!»",
+                    uk: "ЛОГ ШІ #15 (ФІНАЛ): «Ось воно — Первинне Світило. Донеси заряд CORE-7 до Омега-Порталу, і Галактика спалахне знову!»",
+                    en: "AI LOG #15 (FINALE): 'Behold the Prime Luminary. Deliver CORE-7 into the Omega Portal, and the entire Astral Grid will shine once more!'",
+                    de: "KI-LOG #15 (FINALE): 'Sieh das Ur-Gestirn! Bringe CORE-7 in das Omega-Portal, damit die Galaxis wieder erstrahlt!'",
+                    es: "LOG IA #15 (FINAL): 'Contempla el Sol Primordial. ¡Lleva a CORE-7 al Portal Omega y toda la Galaxia volverá a brillar!'",
+                    zh: "AI日志 #15（终章）：“仰望初始恒星吧！将CORE-7送入奥米伽传送门，整个星界网络将再次闪耀！”"
+                },
+                cfg: { hazardChance: 0.95, movingNodes: 0.9, laserChance: 0.9, speedRings: 0.75, blackHoles: 0.75 }
+            }
+        ];
+
+        /* =========================================================================
+           3. RPG-ПРОКАЧКА (4 ТЕХНОЛОГИИ) И 12 ДОСТИЖЕНИЙ
+           ========================================================================= */
+        const UPGRADES_DEF = [
+            {
+                id: 'magnet',
+                maxLvl: 5,
+                baseCost: 40,
+                name: { ru: "Грави-Магнит 💎", uk: "Граві-Магніт 💎", en: "Gem Magnet 💎", de: "Kristall-Magnet 💎", es: "Imán de Gemas 💎", zh: "晶石磁铁 💎" },
+                desc: { ru: "Притягивает кристаллы на расстоянии", uk: "Притягує кристали на відстані", en: "Pulls nearby gems toward your core", de: "Zieht Kristalle automatisch an", es: "Atrae gemas cercanas al núcleo", zh: "自动吸引附近的星尘晶石" }
+            },
+            {
+                id: 'shield',
+                maxLvl: 5,
+                baseCost: 50,
+                name: { ru: "Ёмкость Щита 🛡️", uk: "Ємність Щита 🛡️", en: "Shield Duration 🛡️", de: "Schild-Dauer 🛡️", es: "Duración Escudo 🛡️", zh: "护盾持续时间 🛡️" },
+                desc: { ru: "+1.2 сек к золотому щиту после идеального пуска", uk: "+1.2 сек до золотого щита", en: "+1.2s Golden Shield after Perfect launch", de: "+1.2s Schilddauer nach perfektem Abwurf", es: "+1.2s de Escudo tras tiro perfecto", zh: "完美弹射后护盾延长1.2秒" }
+            },
+            {
+                id: 'sweetspot',
+                maxLvl: 5,
+                baseCost: 45,
+                name: { ru: "Фазовый Прицел 🎯", uk: "Фазовий Приціл 🎯", en: "Golden Arc Lens 🎯", de: "Goldbogen-Linse 🎯", es: "Lente Arco Dorado 🎯", zh: "黄金弧线增幅 🎯" },
+                desc: { ru: "Расширяет золотую дугу идеального выстрела", uk: "Розширює золоту дугу ідеального пуску", en: "Widens the Golden Arc sweet spot on nodes", de: "Vergrößert den goldenen Zielsektor", es: "Amplía la zona dorada de lanzamiento", zh: "扩大引力节点上的黄金完美区域" }
+            },
+            {
+                id: 'greed',
+                maxLvl: 5,
+                baseCost: 60,
+                name: { ru: "Квантовый Синтез ✨", uk: "Квантовий Синтез ✨", en: "Starlight Multiplier ✨", de: "Sternen-Multiplikator ✨", es: "Multiplicador Estelar ✨", zh: "星光收益倍增 ✨" },
+                desc: { ru: "+20% к очкам и шанс двойного кристалла", uk: "+20% до очок та подвійні кристали", en: "+20% score & chance for double gems", de: "+20% Punkte & Doppel-Kristall-Chance", es: "+20% puntos y gemas dobles", zh: "得分+20%并有概率获得双倍晶石" }
+            }
+        ];
+
+        const ACHIEVEMENTS_DEF = [
+            { id: 'first_orbit', reward: 30, icon: '🛰️', title: { ru: "Первая Орбита", uk: "Перша Орбіта", en: "First Orbit", de: "Erster Orbit", es: "Primera Órbita", zh: "初次入轨" }, desc: { ru: "Зацепись за грави-узел в первый раз", uk: "Зачепися за граві-вузол уперше", en: "Latch onto your first gravity node", de: "Kopple an deinen ersten Knoten", es: "Engánchate a tu primer nodo", zh: "首次连接引力节点" } },
+            { id: 'combo_5', reward: 50, icon: '🔥', title: { ru: "Ритм Сверхновой (x5)", uk: "Ритм Наднової (x5)", en: "Supernova Flow (x5)", de: "Supernova-Flow (x5)", es: "Flujo Supernova (x5)", zh: "超新星连击 (x5)" }, desc: { ru: "Достигни комбо x5 идеальными пусками", uk: "Досягни комбо x5 ідеальними пусками", en: "Reach a x5 Perfect Slingshot combo", de: "Erreiche eine x5-Perfekt-Kombo", es: "Alcanza un combo perfecto x5", zh: "达成5连完美弹射" } },
+            { id: 'combo_10', reward: 100, icon: '⚡', title: { ru: "Владыка Орбит (x10)", uk: "Володар Орбіт (x10)", en: "Lord of Orbits (x10)", de: "Herr der Orbits (x10)", es: "Señor de Órbitas (x10)", zh: "轨道主宰 (x10)" }, desc: { ru: "Достигни комбо x10 без единой ошибки", uk: "Досягни комбо x10 без помилок", en: "Reach an unstoppable x10 combo", de: "Erreiche eine x10-Kombo", es: "Alcanza un combo x10 impecable", zh: "达成10连完美弹射" } },
+            { id: 'smash_5', reward: 60, icon: '💥', title: { ru: "Разрушитель Пульсаров", uk: "Руйнівник Пульсарів", en: "Pulsar Crusher", de: "Pulsar-Brecher", es: "Destructor Púlsar", zh: "脉冲粉碎者" }, desc: { ru: "Протарань 5 красных пульсаров под щитом", uk: "Протарань 5 червоних пульсарів під щитом", en: "Smash 5 red pulsars while shielded", de: "Zerstöre 5 rote Pulsare mit Schild", es: "Destruye 5 púlsares rojos con escudo", zh: "在护盾保护下撞碎5个红色脉冲星" } },
+            { id: 'sector_1', reward: 120, icon: '🌟', title: { ru: "Хранитель Колыбели", uk: "Хранитель Колиски", en: "Cradle Awakened", de: "Wiege Erweckt", es: "Cuna Despierta", zh: "点亮摇篮" }, desc: { ru: "Пройди 5-й уровень (Босс Сектора I)", uk: "Пройди 5-й рівень (Бос Сектору I)", en: "Clear Level 5 (Sector I Boss Gate)", de: "Schließe Level 5 ab", es: "Completa el Nivel 5 (Sector I)", zh: "通关第5关（第一星区首领）" } },
+            { id: 'sector_2', reward: 200, icon: '🌀', title: { ru: "Покоритель Сингулярности", uk: "Підкорювач Сингулярності", en: "Rift Conqueror", de: "Spalt-Eroberer", es: "Conquistador Grieta", zh: "裂隙征服者" }, desc: { ru: "Пройди 10-й уровень (Босс Сектора II)", uk: "Пройди 10-й рівень (Бос Сектору II)", en: "Clear Level 10 (Sector II Boss Gate)", de: "Schließe Level 10 ab", es: "Completa el Nivel 10 (Sector II)", zh: "通关第10关（第二星区首领）" } },
+            { id: 'sector_3', reward: 400, icon: '👑', title: { ru: "Свет Этельгарда", uk: "Світло Етельгарда", en: "Savior of Aethelgard", de: "Retter von Aethelgard", es: "Salvador de Aethelgard", zh: "艾瑟尔加德救世主" }, desc: { ru: "Пройди все 15 уровней кампании!", uk: "Пройди всі 15 рівнів кампанії!", en: "Complete all 15 Campaign Levels!", de: "Schließe alle 15 Kampagnen-Level ab!", es: "¡Completa los 15 niveles de campaña!", zh: "通关全部15个战役关卡！" } },
+            { id: 'gems_200', reward: 80, icon: '💎', title: { ru: "Звёздный Геолог", uk: "Зоряний Геолог", en: "Stardust Tycoon", de: "Kristall-Magnat", es: "Magnate Estelar", zh: "星尘大亨" }, desc: { ru: "Накопи 200 кристаллов в хранилище", uk: "Накопич 200 кристалів у сховищі", en: "Hold 200 Stardust Gems in your vault", de: "Besitze 200 Kristalle gleichzeitig", es: "Acumula 200 gemas en tu bóveda", zh: "金库中同时拥有200颗星尘晶石" } },
+            { id: 'upgrade_first', reward: 40, icon: '⚙️', title: { ru: "Техно-Инженер", uk: "Техно-Інженер", en: "Chief Engineer", de: "Chefingenieur", es: "Ingeniero Jefe", zh: "首席工程师" }, desc: { ru: "Прокачай любую технологию в Ангаре", uk: "Прокачай будь-яку технологію в Ангарі", en: "Purchase your first core upgrade", de: "Kaufe dein erstes System-Upgrade", es: "Compra tu primera mejora en el Hangar", zh: "在机库中升级任意核心科技" } },
+            { id: 'skin_unlock', reward: 70, icon: '🛸', title: { ru: "Квантовый Стиль", uk: "Квантовий Стиль", en: "Quantum Fashion", de: "Quanten-Stil", es: "Estilo Cuántico", zh: "量子涂装师" }, desc: { ru: "Разблокируй новый скин зонда", uk: "Розблокуй новий скін зонда", en: "Unlock a new probe skin in the Hangar", de: "Schalte einen neuen Skin frei", es: "Desbloquea un nuevo diseño de sonda", zh: "解锁一款新的探测器涂装" } },
+            { id: 'endless_1000', reward: 90, icon: '🚀', title: { ru: "За Горизонтом (1000m)", uk: "За Горизонтом (1000m)", en: "Deep Space (1000m)", de: "Tiefenraum (1000m)", es: "Espacio Profundo (1000m)", zh: "深空远航 (1000米)" }, desc: { ru: "Преодолей 1000 м за один полет", uk: "Подолай 1000 м за один політ", en: "Reach 1000m altitude in a single flight", de: "Erreiche 1000m Höhe in einem Flug", es: "Alcanza 1000m en un solo vuelo", zh: "单次飞行高度达到1000米" } },
+            { id: 'stars_15', reward: 150, icon: '⭐', title: { ru: "Созвездие Мастера", uk: "Сузір'я Майстра", en: "Starlight Master", de: "Sternenmeister", es: "Maestro Estelar", zh: "群星大师" }, desc: { ru: "Собери 15 звёзд в кампании", uk: "Збери 15 зірок у кампанії", en: "Earn 15 Stars across Campaign levels", de: "Sammle 15 Sterne in der Kampagne", es: "Consigue 15 estrellas en la campaña", zh: "在战役模式中累计获得15颗星" } }
+        ];
+
+        const SKINS = [
+            { id: 'cyan',    cost: 0,   core: '#00F5D4', trail: '#00BBF9', name: { ru: "Неоновый Пульсар", uk: "Неоновий Пульсар", en: "Neon Pulsar", de: "Neon-Pulsar", es: "Púlsar Neón", zh: "霓虹脉冲" } },
+            { id: 'solar',   cost: 60,  core: '#FFB703', trail: '#FB8500', name: { ru: "Солнечная Вспышка", uk: "Сонячний Спалах", en: "Solar Flare", de: "Sonneneruption", es: "Llamarada Solar", zh: "太阳耀斑" } },
+            { id: 'plasma',  cost: 110, core: '#FF2A85', trail: '#9B5DE5', name: { ru: "Кибер-Магента", uk: "Кібер-Магента", en: "Cyber Magenta", de: "Cyber-Magenta", es: "Ciber-Magenta", zh: "赛博品红" } },
+            { id: 'emerald', cost: 160, core: '#10B981', trail: '#34D399', name: { ru: "Изумрудный Дзен", uk: "Смарагдовий Дзен", en: "Emerald Zen", de: "Smaragd-Zen", es: "Zen Esmeralda", zh: "翡翠禅意" } },
+            { id: 'void',    cost: 220, core: '#A855F7', trail: '#38BDF8', name: { ru: "Квантовый Фантом", uk: "Квантовий Фантом", en: "Void Phantom", de: "Quanten-Phantom", es: "Fantasma Cuántico", zh: "虚空幻影" } },
+            { id: 'gold',    cost: 320, core: '#FDE047', trail: '#F43F5E', name: { ru: "Сингулярность", uk: "Сингулярність", en: "Singularity", de: "Singularität", es: "Singularidad", zh: "奇点金核" } }
+        ];
+
+        /* =========================================================================
+           4. СОХРАНЕНИЕ ПРОГРЕССА (LOCALSTORAGE)
+           ========================================================================= */
+        let lang = 'ru';
+        let saveData = {
+            lang: 'ru',
+            bestScore: 0,
+            gems: 60,
+            unlockedLevel: 1,
+            levelStars: {}, // { 1: 3, 2: 2 ... }
+            upgrades: { magnet: 0, shield: 0, sweetspot: 0, greed: 0 },
+            unlockedSkins: ['cyan'],
+            selectedSkin: 'cyan',
+            achievements: [],
+            totalSmeltedPulsars: 0
+        };
+
+        function loadSaveData() {
+            try {
+                const raw = localStorage.getItem('orbitpulse_odyssey_save_v2');
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    saveData = {
+                        ...saveData,
+                        ...parsed,
+                        upgrades: { ...saveData.upgrades, ...(parsed.upgrades || {}) },
+                        levelStars: { ...(parsed.levelStars || {}) }
+                    };
+                    if (LANG_ORDER.includes(saveData.lang)) {
+                        lang = saveData.lang;
+                    }
+                }
+            } catch (e) {}
+            updateTopCounters();
+        }
+
+        function writeSaveData() {
+            try {
+                saveData.lang = lang;
+                localStorage.setItem('orbitpulse_odyssey_save_v2', JSON.stringify(saveData));
+            } catch (e) {}
+            updateTopCounters();
+        }
+
+        function getTotalStars() {
+            return Object.values(saveData.levelStars).reduce((a, b) => a + b, 0);
+        }
+
+        function updateTopCounters() {
+            document.getElementById('hud-gems').textContent = saveData.gems;
+            const hangarGems = document.getElementById('hangar-gems-count');
+            if (hangarGems) hangarGems.textContent = saveData.gems;
+            const starsEl = document.getElementById('ui-stars-total');
+            if (starsEl) starsEl.textContent = `⭐ ${getTotalStars()}/45`;
+        }
+
+        function cycleLanguage() {
+            const idx = LANG_ORDER.indexOf(lang);
+            const nextLang = LANG_ORDER[(idx + 1) % LANG_ORDER.length];
+            setLanguage(nextLang);
+        }
+
+        function setLanguage(newLang) {
+            if (!I18N[newLang]) return;
+            lang = newLang;
+            writeSaveData();
+            applyLocalization();
+            playTone(620, 0.06);
+        }
+
+        function applyLocalization() {
+            const t = I18N[lang];
+            document.getElementById('lang-btn').textContent = `🌐 ${lang.toUpperCase()}`;
+            document.getElementById('lbl-score').textContent = t.score;
+            document.getElementById('ui-edition-tag').textContent = t.editionTag;
+            document.getElementById('start-subtitle').textContent = t.subtitle;
+            document.getElementById('ui-story-header').textContent = t.storyHeader;
+            document.getElementById('ui-story-intro').textContent = t.storyIntro;
+            document.getElementById('txt-btn-campaign').textContent = t.btnCampaign;
+            document.getElementById('txt-btn-endless').textContent = t.btnEndless;
+            document.getElementById('txt-btn-hangar').textContent = t.btnHangar;
+            document.getElementById('txt-btn-ach').textContent = t.btnAch;
+            document.getElementById('txt-btn-apk').textContent = t.btnApk;
+            document.getElementById('camp-modal-title').textContent = t.campTitle;
+            document.getElementById('camp-modal-sub').textContent = t.campSub;
+            document.getElementById('lbl-target-dist').textContent = t.targetDist;
+            document.getElementById('lbl-hazard-type').textContent = t.hazardType;
+            document.getElementById('btn-launch-mission').textContent = t.launchMission;
+            document.getElementById('vic-badge').textContent = t.vicBadge;
+            document.getElementById('vic-title').textContent = t.vicTitle;
+            document.getElementById('vic-lbl-score').textContent = t.score;
+            document.getElementById('btn-next-lvl').textContent = t.nextLvl;
+            document.getElementById('go-badge').textContent = t.goBadge;
+            document.getElementById('go-title').textContent = t.goTitle;
+            document.getElementById('go-lbl-score').textContent = t.score;
+            document.getElementById('go-lbl-alt').textContent = t.goAlt;
+            document.getElementById('go-lbl-gems').textContent = t.goGems;
+            document.getElementById('txt-revive-btn').textContent = t.reviveBtn;
+            document.getElementById('btn-retry').textContent = t.retryBtn;
+            document.getElementById('shop-title').textContent = t.shopTitle;
+            document.getElementById('lbl-upgrades-sec').textContent = t.upgradesSec;
+            document.getElementById('lbl-skins-sec').textContent = t.skinsSec;
+            document.getElementById('ach-modal-title').textContent = t.achTitle;
+            document.getElementById('ach-modal-sub').textContent = t.achSub;
+            document.getElementById('flight-hint').textContent = t.hintHold;
+
+            // Подсветка активной кнопки языка на стартовом экране
+            document.querySelectorAll('.lang-chip').forEach(btn => {
+                const code = btn.textContent.trim().toLowerCase();
+                const isMatch = (code === lang) || (code === 'ua' && lang === 'uk') || (code === '中文' && lang === 'zh');
+                btn.className = isMatch
+                    ? "lang-chip px-2.5 py-0.5 rounded-lg text-[10px] font-mono-code border border-cyan-400 bg-cyan-500/25 text-cyan-200 font-bold"
+                    : "lang-chip px-2 py-0.5 rounded-lg text-[10px] font-mono-code border border-slate-700 bg-slate-900/80 text-slate-400 hover:text-white";
+            });
+
+            updateTopCounters();
+            updateHUD();
+        }
+
+        /* =========================================================================
+           5. СИСТЕМА ДОСТИЖЕНИЙ С ВСПЛЫВАЮЩИМИ УВЕДОМЛЕНИЯМИ
+           ========================================================================= */
+        function unlockAchievement(achId) {
+            if (saveData.achievements.includes(achId)) return;
+            const def = ACHIEVEMENTS_DEF.find(a => a.id === achId);
+            if (!def) return;
+
+            saveData.achievements.push(achId);
+            saveData.gems += def.reward;
+            writeSaveData();
+
+            const toast = document.getElementById('ach-toast');
+            document.getElementById('ach-toast-label').textContent = I18N[lang].achToastLabel;
+            document.getElementById('ach-toast-title').textContent = `${def.icon} ${def.title[lang]} (+${def.reward} 💎)`;
+
+            toast.classList.remove('opacity-0', '-translate-y-6');
+            toast.classList.add('opacity-100', 'translate-y-0');
+            playPerfectLaunchSound(8);
+
+            setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', '-translate-y-6');
+            }, 3400);
+        }
+
+        function checkAllAchievements() {
+            if (saveData.gems >= 200) unlockAchievement('gems_200');
+            if (getTotalStars() >= 15) unlockAchievement('stars_15');
+            if (saveData.totalSmeltedPulsars >= 5) unlockAchievement('smash_5');
+        }
+
+        /* =========================================================================
+           6. ПРОЦЕДУРНЫЙ АУДИО-СИНТЕЗАТОР (Web Audio API)
+           ========================================================================= */
+        let audioCtx = null;
+        let soundOn = true;
+
+        function initAudio() {
+            if (!audioCtx) {
+                const AC = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AC();
+            }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function toggleSound() {
+            initAudio();
+            soundOn = !soundOn;
+            document.getElementById('icon-vol-on').classList.toggle('hidden', !soundOn);
+            document.getElementById('icon-vol-off').classList.toggle('hidden', soundOn);
+        }
+
+        function playTone(freq, dur = 0.12, type = 'sine', vol = 0.08) {
+            if (!soundOn || !audioCtx) return;
+            try {
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, now);
+                gain.gain.setValueAtTime(vol, now);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + dur);
+            } catch (e) {}
+        }
+
+        function playLatchSound(combo) {
+            const scale = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25];
+            playTone(scale[combo % scale.length], 0.14, 'triangle', 0.07);
+        }
+
+        function playPerfectLaunchSound(combo) {
+            const base = 440 * Math.pow(1.055, Math.min(combo, 12));
+            playTone(base, 0.18, 'triangle', 0.09);
+            setTimeout(() => playTone(base * 1.5, 0.24, 'sine', 0.08), 55);
+        }
+
+        function playVictoryFanfare() {
+            [523.25, 659.25, 783.99, 1046.5].forEach((f, idx) => {
+                setTimeout(() => playTone(f, 0.25, 'triangle', 0.1), idx * 90);
+            });
+        }
+
+        function playGemSound() {
+            playTone(880, 0.09, 'sine', 0.07);
+            setTimeout(() => playTone(1318.5, 0.14, 'sine', 0.07), 45);
+        }
+
+        function playSmashSound() {
+            playTone(140, 0.22, 'sawtooth', 0.11);
+            setTimeout(() => playTone(520, 0.18, 'triangle', 0.09), 40);
+        }
+
+        function playCrashSound() {
+            playTone(110, 0.35, 'sawtooth', 0.12);
+            setTimeout(() => playTone(75, 0.4, 'sawtooth', 0.12), 80);
+        }
+
+        /* =========================================================================
+           7. ИГРОВОЕ ЯДРО, ГЕНЕРАЦИЯ УРОВНЕЙ, ЛАЗЕРЫ, ГИПЕР-КОЛЬЦА И ПОРТАЛ ВАРПА
+           ========================================================================= */
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+
+        let W = window.innerWidth;
+        let H = window.innerHeight;
+
+        let game = {
+            running: false,
+            mode: 'campaign', // 'campaign' | 'endless'
+            currentLevelId: 1,
+            targetDistance: 1200,
+            score: 0,
+            altitude: 0,
+            runGems: 0,
+            combo: 1,
+            cameraY: 0,
+            shakeTimer: 0,
+            shakeMag: 0,
+            freezeFrames: 0,
+            revivedOnce: false,
+            isHolding: false,
+            warpGateSpawned: false
+        };
+
+        let player = {
+            x: 0,
+            y: 0,
+            vx: 0,
+            vy: 0,
+            radius: 10,
+            tetherNode: null,
+            orbitAngle: 0,
+            orbitRadius: 55,
+            orbitDir: 1,
+            angularSpeed: 0.068,
+            shieldTimer: 0,
+            trail: []
+        };
+
+        let nodes = [];
+        let gems = [];
+        let speedRings = [];
+        let laserGates = [];
+        let warpGate = null;
+        let particles = [];
+        let shockwaves = [];
+        let popups = [];
+        let stars = [];
+        let highestSpawnY = 0;
+
+        function resizeCanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            W = window.innerWidth;
+            H = window.innerHeight;
+            canvas.width = W * dpr;
+            canvas.height = H * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        function initStarfield() {
+            stars = [];
+            for (let i = 0; i < 70; i++) {
+                stars.push({
+                    x: Math.random() * W,
+                    y: Math.random() * H,
+                    size: Math.random() * 2 + 0.5,
+                    parallax: Math.random() * 0.35 + 0.08,
+                    alpha: Math.random() * 0.6 + 0.2
+                });
+            }
+        }
+
+        function getActiveLevelConfig() {
+            if (game.mode === 'endless') {
+                return { hazardChance: 0.65, movingNodes: 0.45, laserChance: 0.35, speedRings: 0.45, blackHoles: 0.35 };
+            }
+            const lvl = CAMPAIGN_LEVELS.find(l => l.id === game.currentLevelId) || CAMPAIGN_LEVELS[0];
+            return lvl.cfg;
+        }
+
+        // Бонус ширины золотой дуги от прокачки
+        function getSweetSpotBonus() {
+            return (saveData.upgrades.sweetspot || 0) * 0.08;
+        }
+
+        function spawnNextSector(yPos) {
+            const cfg = getActiveLevelConfig();
+            const margin = Math.max(65, W * 0.16);
+            const nodeX = margin + Math.random() * (W - margin * 2);
+
+            // Если в режиме кампании мы достигли целевой высоты — спавним Финальные Врата Варпа!
+            const currentMeters = Math.round(-yPos / 12);
+            if (game.mode === 'campaign' && !game.warpGateSpawned && currentMeters >= game.targetDistance) {
+                game.warpGateSpawned = true;
+                warpGate = {
+                    x: W / 2,
+                    y: yPos - 90,
+                    radius: 52,
+                    phase: 0
+                };
+                return;
+            }
+
+            const roll = Math.random();
+            let type = 'normal';
+            if (roll < cfg.blackHoles * 0.45 && Math.abs(yPos) > 500) type = 'purple';
+            else if (roll > 0.72) type = 'gold';
+
+            const sweetCenter = -Math.PI / 2 + (Math.random() - 0.5) * 0.65;
+            const isMoving = Math.random() < cfg.movingNodes;
+
+            const newNode = {
+                x: nodeX,
+                y: yPos,
+                vx: isMoving ? (Math.random() < 0.5 ? 1.15 : -1.15) : 0,
+                radius: type === 'gold' ? 16 : 14,
+                orbitRing: 54 + Math.random() * 12,
+                type: type,
+                sweetAngle: sweetCenter,
+                sweetSpan: 0.58 + getSweetSpotBonus(),
+                pulsePhase: Math.random() * Math.PI * 2,
+                visited: false
+            };
+            nodes.push(newNode);
+
+            // Кристаллы вокруг узла
+            const gemCount = type === 'gold' ? 3 : 2;
+            for (let i = 0; i < gemCount; i++) {
+                const angle = (i / gemCount) * Math.PI * 2 + Math.random();
+                gems.push({
+                    x: nodeX + Math.cos(angle) * newNode.orbitRing,
+                    y: yPos + Math.sin(angle) * newNode.orbitRing,
+                    r: 7,
+                    collected: false,
+                    phase: Math.random() * 6
+                });
+            }
+
+            // Изумрудное Гипер-Кольцо ускорения
+            if (Math.random() < cfg.speedRings) {
+                speedRings.push({
+                    x: margin + Math.random() * (W - margin * 2),
+                    y: yPos + 95,
+                    r: 22,
+                    used: false
+                });
+            }
+
+            // Пульсирующий лазерный шлюз
+            if (yPos < -450 && Math.random() < cfg.laserChance) {
+                const spanW = Math.min(180, W * 0.45);
+                const lx = margin + Math.random() * (W - margin * 2 - spanW);
+                laserGates.push({
+                    x1: lx,
+                    y: yPos - 95,
+                    x2: lx + spanW,
+                    phase: Math.random() * Math.PI * 2
+                });
+            }
+
+            // Красный патрульный пульсар
+            if (yPos < -360 && Math.random() < cfg.hazardChance) {
+                const hazX = margin + Math.random() * (W - margin * 2);
+                const hazY = yPos + 100;
+                if (Math.hypot(hazX - nodeX, hazY - yPos) > 82) {
+                    nodes.push({
+                        x: hazX,
+                        y: hazY,
+                        radius: 13,
+                        orbitRing: 0,
+                        type: 'hazard',
+                        vx: (Math.random() - 0.5) * 2.1,
+                        pulsePhase: Math.random() * 6
+                    });
+                }
+            }
+        }
+
+        function resetWorld(keepScore = false) {
+            if (!keepScore) {
+                game.score = 0;
+                game.altitude = 0;
+                game.runGems = 0;
+                game.combo = 1;
+                game.revivedOnce = false;
+            }
+
+            game.cameraY = 0;
+            game.isHolding = false;
+            game.warpGateSpawned = false;
+            warpGate = null;
+
+            player.x = W / 2;
+            player.y = H * 0.72;
+            player.vx = 0;
+            player.vy = -8.4;
+            player.tetherNode = null;
+            player.shieldTimer = 180 + (saveData.upgrades.shield || 0) * 45;
+            player.trail = [];
+
+            nodes = [];
+            gems = [];
+            speedRings = [];
+            laserGates = [];
+            particles = [];
+            shockwaves = [];
+            popups = [];
+
+            nodes.push({
+                x: W / 2,
+                y: H * 0.48,
+                vx: 0,
+                radius: 15,
+                orbitRing: 56,
+                type: 'normal',
+                sweetAngle: -Math.PI / 2,
+                sweetSpan: 0.72 + getSweetSpotBonus(),
+                pulsePhase: 0,
+                visited: false
+            });
+
+            highestSpawnY = H * 0.48;
+            while (highestSpawnY > -H * 1.5) {
+                highestSpawnY -= 195 + Math.random() * 30;
+                spawnNextSector(highestSpawnY);
+            }
+
+            updateHUD();
+        }
+
+        /* =========================================================================
+           8. ЗАПУСК КАМПАНИИ, СЮЖЕТНЫХ ОКОН И БЕСКОНЕЧНОГО РЕЖИМА
+           ========================================================================= */
+        let pendingCampaignLevelId = 1;
+        let typewriterInterval = null;
+
+        function openMainMenu() {
+            game.running = false;
+            closeModal('campaign-modal');
+            closeModal('hangar-modal');
+            closeModal('ach-modal');
+            closeModal('apk-modal');
+            document.getElementById('victory-overlay').classList.add('hidden');
+            document.getElementById('victory-overlay').classList.remove('flex');
+            document.getElementById('gameover-overlay').classList.add('hidden');
+            document.getElementById('gameover-overlay').classList.remove('flex');
+            document.getElementById('start-overlay').classList.remove('hidden');
+            updateTopCounters();
+        }
+
+        function openCampaignModal() {
+            renderCampaignSectors();
+            openModal('campaign-modal');
+        }
+
+        function renderCampaignSectors() {
+            const container = document.getElementById('campaign-sectors-list');
+            container.innerHTML = '';
+            const t = I18N[lang];
+
+            [0, 1, 2].forEach(secIdx => {
+                const secBlock = document.createElement('div');
+                secBlock.className = "space-y-2";
+
+                const header = document.createElement('div');
+                header.className = "text-[11px] font-arcade font-bold text-cyan-300 tracking-wider uppercase border-b border-slate-800 pb-1";
+                header.textContent = t.sectorNames[secIdx];
+                secBlock.appendChild(header);
+
+                const grid = document.createElement('div');
+                grid.className = "grid grid-cols-1 gap-2";
+
+                CAMPAIGN_LEVELS.filter(l => l.sector === secIdx).forEach(lvl => {
+                    const unlocked = lvl.id <= saveData.unlockedLevel;
+                    const stars = saveData.levelStars[lvl.id] || 0;
+                    const starStr = [1, 2, 3].map(s => s <= stars ? '⭐' : '☆').join('');
+
+                    const btn = document.createElement('button');
+                    btn.disabled = !unlocked;
+                    btn.className = `w-full p-3 rounded-2xl border text-left flex items-center justify-between transition ${
+                        unlocked
+                            ? 'bg-slate-900/90 hover:bg-slate-800 border-slate-700/90 hover:border-cyan-400/60 text-white active:scale-[0.99]'
+                            : 'bg-slate-950/50 border-slate-900 text-slate-600 cursor-not-allowed'
+                    }`;
+
+                    btn.innerHTML = `
+                        <div>
+                            <div class="text-xs font-bold">${lvl.name[lang]}</div>
+                            <div class="text-[10px] font-mono-code text-slate-400 mt-0.5">${lvl.dist}m • ${lvl.hazardKey[lang]}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xs tracking-widest ${unlocked ? 'text-amber-300' : 'text-slate-700'}">${unlocked ? starStr : '🔒'}</div>
+                            <div class="text-[10px] font-mono-code text-amber-400/90">+${lvl.reward} 💎</div>
+                        </div>
+                    `;
+
+                    if (unlocked) {
+                        btn.onclick = () => showStoryTransmission(lvl.id);
+                    }
+                    grid.appendChild(btn);
+                });
+
+                secBlock.appendChild(grid);
+                container.appendChild(secBlock);
+            });
+        }
+
+        function showStoryTransmission(levelId) {
+            pendingCampaignLevelId = levelId;
+            closeModal('campaign-modal');
+            const lvl = CAMPAIGN_LEVELS.find(l => l.id === levelId) || CAMPAIGN_LEVELS[0];
+
+            document.getElementById('story-log-id').textContent = `ASTRAL LOG #${String(lvl.id).padStart(2, '0')}`;
+            document.getElementById('story-sector-badge').textContent = `SECTOR ${lvl.sector + 1}`;
+            document.getElementById('story-level-title').textContent = lvl.name[lang];
+            document.getElementById('story-target-dist').textContent = `${lvl.dist}m`;
+            document.getElementById('story-hazard-info').textContent = lvl.hazardKey[lang];
+
+            const loreBox = document.getElementById('story-lore-text');
+            loreBox.textContent = '';
+            const fullText = lvl.lore[lang];
+
+            if (typewriterInterval) clearInterval(typewriterInterval);
+            let charIdx = 0;
+            typewriterInterval = setInterval(() => {
+                charIdx += 2;
+                loreBox.textContent = fullText.slice(0, charIdx);
+                if (charIdx >= fullText.length) clearInterval(typewriterInterval);
+            }, 18);
+
+            openModal('story-modal');
+            playTone(540, 0.08);
+        }
+
+        function launchSelectedCampaignLevel() {
+            if (typewriterInterval) clearInterval(typewriterInterval);
+            closeModal('story-modal');
+            document.getElementById('start-overlay').classList.add('hidden');
+            document.getElementById('victory-overlay').classList.add('hidden');
+            document.getElementById('victory-overlay').classList.remove('flex');
+            document.getElementById('gameover-overlay').classList.add('hidden');
+            document.getElementById('gameover-overlay').classList.remove('flex');
+
+            const lvl = CAMPAIGN_LEVELS.find(l => l.id === pendingCampaignLevelId) || CAMPAIGN_LEVELS[0];
+            game.mode = 'campaign';
+            game.currentLevelId = lvl.id;
+            game.targetDistance = lvl.dist;
+
+            initAudio();
+            resetWorld(false);
+            game.running = true;
+            playPerfectLaunchSound(1);
+        }
+
+        function startEndlessMode() {
+            initAudio();
+            document.getElementById('start-overlay').classList.add('hidden');
+            document.getElementById('gameover-overlay').classList.add('hidden');
+            document.getElementById('gameover-overlay').classList.remove('flex');
+
+            game.mode = 'endless';
+            game.targetDistance = 999999;
+            resetWorld(false);
+            game.running = true;
+            playPerfectLaunchSound(1);
+        }
+
+        function retryCurrentRun() {
+            if (game.mode === 'campaign') {
+                launchSelectedCampaignLevel();
+            } else {
+                startEndlessMode();
+            }
+        }
+
+        function playNextCampaignLevel() {
+            if (game.currentLevelId < CAMPAIGN_LEVELS.length) {
+                showStoryTransmission(game.currentLevelId + 1);
+            } else {
+                startEndlessMode();
+            }
+        }
+
+        function completeCampaignLevel() {
+            game.running = false;
+            game.isHolding = false;
+            playVictoryFanfare();
+
+            const lvl = CAMPAIGN_LEVELS.find(l => l.id === game.currentLevelId) || CAMPAIGN_LEVELS[0];
+            const earnedStars = game.revivedOnce ? 2 : 3;
+
+            saveData.levelStars[lvl.id] = Math.max(saveData.levelStars[lvl.id] || 0, earnedStars);
+            if (lvl.id >= saveData.unlockedLevel && lvl.id < CAMPAIGN_LEVELS.length) {
+                saveData.unlockedLevel = lvl.id + 1;
+            }
+
+            saveData.gems += lvl.reward;
+            writeSaveData();
+
+            // Проверка сюжетных достижений
+            if (lvl.id === 5) unlockAchievement('sector_1');
+            if (lvl.id === 10) unlockAchievement('sector_2');
+            if (lvl.id === 15) unlockAchievement('sector_3');
+            checkAllAchievements();
+
+            document.getElementById('vic-val-score').textContent = game.score;
+            document.getElementById('vic-val-gems').textContent = `+${lvl.reward + game.runGems} 💎`;
+            document.getElementById('vic-stars').innerHTML = [1, 2, 3].map(s => `<span>${s <= earnedStars ? '⭐' : '☆'}</span>`).join('');
+
+            const vic = document.getElementById('victory-overlay');
+            vic.classList.remove('hidden');
+            vic.classList.add('flex');
+        }
+
+        function revivePlayer() {
+            initAudio();
+            document.getElementById('gameover-overlay').classList.add('hidden');
+            document.getElementById('gameover-overlay').classList.remove('flex');
+            game.revivedOnce = true;
+
+            player.x = W / 2;
+            player.y = game.cameraY + H * 0.65;
+            player.vx = 0;
+            player.vy = -10.8;
+            player.tetherNode = null;
+            player.shieldTimer = 320;
+            game.running = true;
+            createBurst(player.x, player.y, '#FFB703', 35);
+            playPerfectLaunchSound(4);
+        }
+
+        function triggerGameOver() {
+            game.running = false;
+            game.isHolding = false;
+            playCrashSound();
+
+            if (game.score > saveData.bestScore) {
+                saveData.bestScore = game.score;
+            }
+            writeSaveData();
+            checkAllAchievements();
+
+            document.getElementById('go-val-score').textContent = game.score;
+            document.getElementById('go-val-alt').textContent = `${game.altitude}m`;
+            document.getElementById('go-val-gems').textContent = `+${game.runGems} 💎`;
+
+            const reviveBtn = document.getElementById('btn-revive');
+            reviveBtn.classList.toggle('hidden', game.revivedOnce);
+
+            const over = document.getElementById('gameover-overlay');
+            over.classList.remove('hidden');
+            over.classList.add('flex');
+        }
+
+        /* =========================================================================
+           9. МЕХАНИКА ЗАХВАТА ОРБИТЫ И ВЫСТРЕЛА ПО КАСАТЕЛЬНОЙ
+           ========================================================================= */
+        function handleHoldStart() {
+            if (!game.running) return;
+            initAudio();
+            game.isHolding = true;
+            if (!player.tetherNode) {
+                tryLatchNearestNode();
+            }
+        }
+
+        function handleHoldRelease() {
+            if (!game.running) return;
+            game.isHolding = false;
+
+            if (player.tetherNode) {
+                const node = player.tetherNode;
+                const tangentAngle = player.orbitAngle + (player.orbitDir * Math.PI / 2);
+                const angleDiff = Math.abs(normalizeAngle(tangentAngle - node.sweetAngle));
+                const isPerfect = angleDiff <= (node.sweetSpan * 0.65);
+
+                let launchSpeed = node.type === 'gold' ? 12.4 : 9.9;
+                const scoreMult = 1 + (saveData.upgrades.greed || 0) * 0.2;
+
+                if (isPerfect) {
+                    launchSpeed *= 1.25;
+                    game.combo = Math.min(15, game.combo + 1);
+                    const shieldBonusFrames = 200 + (saveData.upgrades.shield || 0) * 72;
+                    player.shieldTimer = Math.max(player.shieldTimer, shieldBonusFrames);
+
+                    const pts = Math.round(50 * game.combo * scoreMult);
+                    game.score += pts;
+                    game.freezeFrames = 3;
+                    game.shakeTimer = 10;
+                    game.shakeMag = 6;
+
+                    createBurst(player.x, player.y, '#FFB703', 30);
+                    shockwaves.push({ x: node.x, y: node.y, r: node.orbitRing, maxR: 135, color: '#FFB703', alpha: 1 });
+                    addPopup(player.x, player.y - 20, `${I18N[lang].perfectPopup} +${pts}`, '#FFB703');
+                    playPerfectLaunchSound(game.combo);
+
+                    if (game.combo >= 5) unlockAchievement('combo_5');
+                    if (game.combo >= 10) unlockAchievement('combo_10');
+                } else {
+                    game.combo = 1;
+                    const pts = Math.round(15 * scoreMult);
+                    game.score += pts;
+                    createBurst(player.x, player.y, '#00F5D4', 12);
+                    addPopup(player.x, player.y - 15, `${I18N[lang].slingshot} +${pts}`, '#00F5D4');
+                    playTone(360, 0.1, 'sine', 0.06);
+                }
+
+                player.vx = Math.cos(tangentAngle) * launchSpeed;
+                player.vy = Math.sin(tangentAngle) * launchSpeed;
+                player.tetherNode = null;
+                updateHUD();
+            }
+        }
+
+        function tryLatchNearestNode() {
+            let bestNode = null;
+            let minDist = 180;
+
+            for (const n of nodes) {
+                if (n.type === 'hazard') continue;
+                const d = Math.hypot(player.x - n.x, player.y - n.y);
+                if (d < minDist) {
+                    minDist = d;
+                    bestNode = n;
+                }
+            }
+
+            if (bestNode) {
+                player.tetherNode = bestNode;
+                player.orbitRadius = Math.max(42, Math.min(82, minDist));
+                player.orbitAngle = Math.atan2(player.y - bestNode.y, player.x - bestNode.x);
+
+                const rx = player.x - bestNode.x;
+                const ry = player.y - bestNode.y;
+                const cross = rx * player.vy - ry * player.vx;
+                player.orbitDir = cross >= 0 ? 1 : -1;
+                player.angularSpeed = bestNode.type === 'gold' ? 0.088 : 0.068;
+
+                if (!bestNode.visited) {
+                    bestNode.visited = true;
+                    game.score += 10 * game.combo;
+                    shockwaves.push({ x: bestNode.x, y: bestNode.y, r: 10, maxR: bestNode.orbitRing, color: '#00F5D4', alpha: 0.8 });
+                }
+
+                unlockAchievement('first_orbit');
+                playLatchSound(game.combo);
+                updateHUD();
+            }
+        }
+
+        function normalizeAngle(a) {
+            while (a > Math.PI) a -= Math.PI * 2;
+            while (a < -Math.PI) a += Math.PI * 2;
+            return a;
+        }
+
+        function updateHUD() {
+            document.getElementById('hud-score').textContent = game.score;
+
+            if (game.mode === 'campaign') {
+                const pct = Math.min(100, Math.round((game.altitude / game.targetDistance) * 100));
+                document.getElementById('lbl-mode-status').textContent = `LVL ${game.currentLevelId}`;
+                document.getElementById('hud-progress').textContent = `${pct}%`;
+                document.getElementById('warp-progress-bar').style.width = `${pct}%`;
+                document.getElementById('warp-dist-txt').textContent = `${game.altitude}/${game.targetDistance}m`;
+            } else {
+                document.getElementById('lbl-mode-status').textContent = `∞ BEST: ${saveData.bestScore}`;
+                document.getElementById('hud-progress').textContent = `${game.altitude}m`;
+                document.getElementById('warp-progress-bar').style.width = `100%`;
+                document.getElementById('warp-dist-txt').textContent = `${game.altitude}m`;
+            }
+
+            const pill = document.getElementById('combo-pill');
+            if (game.combo > 1 || player.shieldTimer > 0) {
+                pill.classList.remove('hidden');
+                pill.textContent = player.shieldTimer > 0 ? `🛡️ x${game.combo}` : `x${game.combo}`;
+            } else {
+                pill.classList.add('hidden');
+            }
+        }
+
+        function createBurst(x, y, color, count = 20) {
+            for (let i = 0; i < count; i++) {
+                const ang = Math.random() * Math.PI * 2;
+                const spd = Math.random() * 5.5 + 1.2;
+                particles.push({
+                    x, y,
+                    vx: Math.cos(ang) * spd,
+                    vy: Math.sin(ang) * spd,
+                    r: Math.random() * 3.2 + 1.2,
+                    color,
+                    alpha: 1,
+                    decay: Math.random() * 0.025 + 0.018
+                });
+            }
+        }
+
+        function addPopup(x, y, text, color) {
+            popups.push({ x, y, text, color, alpha: 1, vy: -1.4 });
+        }
+
+        function getActiveSkin() {
+            return SKINS.find(s => s.id === saveData.selectedSkin) || SKINS[0];
+        }
+
+        /* =========================================================================
+           10. ФИЗИКА И РЕНДЕРИНГ СЦЕНЫ (60 FPS)
+           ========================================================================= */
+        function updatePhysics(time) {
+            if (!game.running) return;
+            const t = time * 0.001;
+
+            if (game.freezeFrames > 0) {
+                game.freezeFrames--;
+                return;
+            }
+
+            if (player.shieldTimer > 0) player.shieldTimer--;
+
+            // Движение дрейфующих узлов
+            nodes.forEach(n => {
+                if (n.type !== 'hazard' && n.vx) {
+                    n.x += n.vx;
+                    if (n.x < 55 || n.x > W - 55) n.vx *= -1;
+                }
+            });
+
+            if (game.isHolding && !player.tetherNode) {
+                tryLatchNearestNode();
+            }
+
+            if (player.tetherNode) {
+                const n = player.tetherNode;
+                player.orbitRadius += (n.orbitRing - player.orbitRadius) * 0.15;
+                player.orbitAngle += player.orbitDir * player.angularSpeed;
+                player.x = n.x + Math.cos(player.orbitAngle) * player.orbitRadius;
+                player.y = n.y + Math.sin(player.orbitAngle) * player.orbitRadius;
+            } else {
+                player.vy += 0.14;
+
+                // Притяжение черных дыр
+                for (const n of nodes) {
+                    if (n.type === 'purple') {
+                        const dx = n.x - player.x;
+                        const dy = n.y - player.y;
+                        const dist = Math.hypot(dx, dy);
+                        if (dist < 195 && dist > 15) {
+                            player.vx += (dx / dist) * 0.29;
+                            player.vy += (dy / dist) * 0.29;
+                        }
+                    }
+                }
+
+                player.x += player.vx;
+                player.y += player.vy;
+
+                if (player.x < player.radius + 6) {
+                    player.x = player.radius + 6;
+                    player.vx = Math.abs(player.vx) * 0.85;
+                    createBurst(player.x, player.y, '#00F5D4', 8);
+                    playTone(240, 0.06);
+                } else if (player.x > W - player.radius - 6) {
+                    player.x = W - player.radius - 6;
+                    player.vx = -Math.abs(player.vx) * 0.85;
+                    createBurst(player.x, player.y, '#00F5D4', 8);
+                    playTone(240, 0.06);
+                }
+            }
+
+            player.trail.push({ x: player.x, y: player.y });
+            if (player.trail.length > 22) player.trail.shift();
+
+            const targetCamY = player.y - H * 0.62;
+            if (targetCamY < game.cameraY) {
+                game.cameraY += (targetCamY - game.cameraY) * 0.12;
+            }
+
+            const currentAlt = Math.max(0, Math.round(-game.cameraY / 12));
+            if (currentAlt > game.altitude) {
+                game.altitude = currentAlt;
+                if (game.altitude >= 1000) unlockAchievement('endless_1000');
+                updateHUD();
+            }
+
+            // Проверка входа в Финальные Врата Варпа (Победа на уровне Кампании)
+            if (warpGate) {
+                const distToGate = Math.hypot(player.x - warpGate.x, player.y - warpGate.y);
+                if (distToGate < warpGate.radius + player.radius + 12 || player.y < warpGate.y) {
+                    createBurst(warpGate.x, warpGate.y, '#00F5D4', 55);
+                    completeCampaignLevel();
+                    return;
+                }
+            }
+
+            while (!game.warpGateSpawned && highestSpawnY > game.cameraY - H * 0.8) {
+                highestSpawnY -= 190 + Math.random() * 35;
+                spawnNextSector(highestSpawnY);
+            }
+
+            const cullY = game.cameraY + H * 1.35;
+            nodes = nodes.filter(n => n.y < cullY);
+            gems = gems.filter(g => g.y < cullY && !g.collected);
+            speedRings = speedRings.filter(r => r.y < cullY && !r.used);
+            laserGates = laserGates.filter(l => l.y < cullY);
+
+            // Грави-Магнит кристаллов (прокачивается в Ангаре)
+            const magnetRange = 22 + (saveData.upgrades.magnet || 0) * 28;
+            const doubleGemChance = (saveData.upgrades.greed || 0) * 0.12;
+
+            for (const g of gems) {
+                if (g.collected) continue;
+                const d = Math.hypot(player.x - g.x, player.y - g.y);
+                if (d < magnetRange) {
+                    g.x += (player.x - g.x) * 0.18;
+                    g.y += (player.y - g.y) * 0.18;
+                }
+                if (d < player.radius + g.r + 9) {
+                    g.collected = true;
+                    const gemGain = Math.random() < doubleGemChance ? 2 : 1;
+                    saveData.gems += gemGain;
+                    game.runGems += gemGain;
+                    game.score += 25 * game.combo;
+                    createBurst(g.x, g.y, '#FFB703', 14);
+                    addPopup(g.x, g.y, `+${gemGain} 💎`, "#FFB703");
+                    playGemSound();
+                    writeSaveData();
+                    updateHUD();
+                }
+            }
+
+            // Изумрудные гипер-кольца ускорения
+            for (const ring of speedRings) {
+                if (!ring.used && Math.hypot(player.x - ring.x, player.y - ring.y) < ring.r + player.radius + 6) {
+                    ring.used = true;
+                    player.tetherNode = null;
+                    player.vy = -13.8;
+                    player.shieldTimer = Math.max(player.shieldTimer, 150);
+                    game.score += 75;
+                    createBurst(ring.x, ring.y, '#00F5D4', 26);
+                    shockwaves.push({ x: ring.x, y: ring.y, r: 10, maxR: 95, color: '#00F5D4', alpha: 1 });
+                    addPopup(ring.x, ring.y, I18N[lang].speedBoost, '#00F5D4');
+                    playPerfectLaunchSound(6);
+                    updateHUD();
+                }
+            }
+
+            // Проверка лазерных заслонок
+            for (const las of laserGates) {
+                const activeBeam = Math.sin(t * 2.6 + las.phase) > -0.15;
+                if (activeBeam && Math.abs(player.y - las.y) < player.radius + 5 && player.x >= las.x1 && player.x <= las.x2) {
+                    if (player.shieldTimer > 0) {
+                        player.shieldTimer = 0;
+                        createBurst(player.x, player.y, '#FFB703', 25);
+                        playSmashSound();
+                    } else {
+                        createBurst(player.x, player.y, '#FF2A85', 45);
+                        triggerGameOver();
+                        return;
+                    }
+                }
+            }
+
+            // Столкновение с красными пульсарами
+            for (let i = nodes.length - 1; i >= 0; i--) {
+                const n = nodes[i];
+                if (n.type === 'hazard') {
+                    n.x += n.vx;
+                    if (n.x < 40 || n.x > W - 40) n.vx *= -1;
+
+                    const dist = Math.hypot(player.x - n.x, player.y - n.y);
+                    if (dist < player.radius + n.radius + 4) {
+                        if (player.shieldTimer > 0) {
+                            game.score += 100;
+                            saveData.totalSmeltedPulsars++;
+                            game.shakeTimer = 12;
+                            game.shakeMag = 8;
+                            createBurst(n.x, n.y, '#FF2A85', 38);
+                            shockwaves.push({ x: n.x, y: n.y, r: 10, maxR: 110, color: '#FF2A85', alpha: 1 });
+                            addPopup(n.x, n.y, I18N[lang].shieldSmash, '#FF2A85');
+                            playSmashSound();
+                            nodes.splice(i, 1);
+                            checkAllAchievements();
+                            updateHUD();
+                        } else {
+                            createBurst(player.x, player.y, '#FF2A85', 45);
+                            triggerGameOver();
+                            return;
+                        }
+                    }
+                }
+            }
+
+            if (player.y > game.cameraY + H + 75) {
+                triggerGameOver();
+            }
+        }
+
+        function renderScene(time) {
+            const t = time * 0.001;
+            ctx.clearRect(0, 0, W, H);
+
+            stars.forEach(s => {
+                const sy = (s.y - game.cameraY * s.parallax) % H;
+                const drawY = sy < 0 ? sy + H : sy;
+                ctx.fillStyle = `rgba(226, 232, 240, ${s.alpha})`;
+                ctx.beginPath();
+                ctx.arc(s.x, drawY, s.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            ctx.save();
+            let shakeX = 0, shakeY = 0;
+            if (game.shakeTimer > 0) {
+                game.shakeTimer--;
+                shakeX = (Math.random() - 0.5) * game.shakeMag;
+                shakeY = (Math.random() - 0.5) * game.shakeMag;
+            }
+            ctx.translate(shakeX, -game.cameraY + shakeY);
+
+            // Отрисовка Врат Варпа (Финиш уровня Кампании)
+            if (warpGate) {
+                ctx.save();
+                ctx.shadowColor = '#00F5D4';
+                ctx.shadowBlur = 30;
+                ctx.strokeStyle = '#00F5D4';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.arc(warpGate.x, warpGate.y, warpGate.radius + Math.sin(t * 5) * 4, 0, Math.PI * 2);
+                ctx.stroke();
+
+                ctx.strokeStyle = '#FFB703';
+                ctx.lineWidth = 2.5;
+                ctx.setLineDash([10, 8]);
+                ctx.beginPath();
+                ctx.arc(warpGate.x, warpGate.y, warpGate.radius * 0.72, t * 2, t * 2 + Math.PI * 1.8);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                ctx.fillStyle = 'rgba(0, 245, 212, 0.22)';
+                ctx.beginPath();
+                ctx.arc(warpGate.x, warpGate.y, warpGate.radius * 0.9, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            // Отрисовка Изумрудных Гипер-Колец
+            speedRings.forEach(ring => {
+                if (ring.used) return;
+                ctx.save();
+                ctx.strokeStyle = '#10B981';
+                ctx.shadowColor = '#10B981';
+                ctx.shadowBlur = 15;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(ring.x, ring.y, ring.r + Math.sin(t * 6) * 2, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
+            });
+
+            // Отрисовка Лазерных Заслонок
+            laserGates.forEach(las => {
+                const activeBeam = Math.sin(t * 2.6 + las.phase) > -0.15;
+                ctx.save();
+                ctx.fillStyle = '#94a3b8';
+                ctx.beginPath();
+                ctx.arc(las.x1, las.y, 5, 0, Math.PI * 2);
+                ctx.arc(las.x2, las.y, 5, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.strokeStyle = activeBeam ? '#FF2A85' : 'rgba(255, 42, 133, 0.2)';
+                ctx.lineWidth = activeBeam ? 4 : 1.5;
+                if (activeBeam) {
+                    ctx.shadowColor = '#FF2A85';
+                    ctx.shadowBlur = 14;
+                }
+                ctx.beginPath();
+                ctx.moveTo(las.x1, las.y);
+                ctx.lineTo(las.x2, las.y);
+                ctx.stroke();
+                ctx.restore();
+            });
+
+            // Ударные волны
+            for (let i = shockwaves.length - 1; i >= 0; i--) {
+                const sw = shockwaves[i];
+                sw.r += (sw.maxR - sw.r) * 0.16;
+                sw.alpha -= 0.035;
+                if (sw.alpha <= 0) {
+                    shockwaves.splice(i, 1);
+                    continue;
+                }
+                ctx.strokeStyle = sw.color;
+                ctx.globalAlpha = sw.alpha;
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.arc(sw.x, sw.y, sw.r, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+            }
+
+            // Гравитационные узлы и враги
+            nodes.forEach(n => {
+                if (n.type === 'hazard') {
+                    const pulse = 1 + 0.15 * Math.sin(t * 8 + n.pulsePhase);
+                    ctx.save();
+                    ctx.shadowColor = '#FF2A85';
+                    ctx.shadowBlur = 18;
+                    ctx.fillStyle = '#FF2A85';
+                    ctx.beginPath();
+                    ctx.arc(n.x, n.y, n.radius * pulse, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.strokeStyle = '#FF2A85';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(n.x, n.y, n.radius * 1.55, t * 3, t * 3 + Math.PI * 1.2);
+                    ctx.stroke();
+                    ctx.restore();
+                } else {
+                    const nodeColor = n.type === 'gold' ? '#FFB703' : (n.type === 'purple' ? '#9B5DE5' : '#00F5D4');
+                    ctx.save();
+                    ctx.strokeStyle = nodeColor;
+                    ctx.globalAlpha = player.tetherNode === n ? 0.55 : 0.22;
+                    ctx.lineWidth = 1.5;
+                    ctx.setLineDash([6, 6]);
+                    ctx.beginPath();
+                    ctx.arc(n.x, n.y, n.orbitRing, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+
+                    ctx.strokeStyle = '#FFB703';
+                    ctx.globalAlpha = player.tetherNode === n ? 0.95 : 0.45;
+                    ctx.lineWidth = player.tetherNode === n ? 4.5 : 3;
+                    ctx.beginPath();
+                    ctx.arc(n.x, n.y, n.orbitRing, n.sweetAngle - n.sweetSpan / 2, n.sweetAngle + n.sweetSpan / 2);
+                    ctx.stroke();
+
+                    ctx.globalAlpha = 1;
+                    ctx.shadowColor = nodeColor;
+                    ctx.shadowBlur = 18;
+                    ctx.fillStyle = nodeColor;
+                    ctx.beginPath();
+                    ctx.arc(n.x, n.y, n.radius, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath();
+                    ctx.arc(n.x, n.y, n.radius * 0.42, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                }
+            });
+
+            // Кристаллы
+            gems.forEach(g => {
+                if (g.collected) return;
+                const bob = Math.sin(t * 4 + g.phase) * 3;
+                ctx.save();
+                ctx.translate(g.x, g.y + bob);
+                ctx.rotate(t * 1.5 + g.phase);
+                ctx.shadowColor = '#FFB703';
+                ctx.shadowBlur = 12;
+                ctx.fillStyle = '#FFB703';
+                ctx.beginPath();
+                ctx.moveTo(0, -g.r);
+                ctx.lineTo(g.r * 0.8, 0);
+                ctx.lineTo(0, g.r);
+                ctx.lineTo(-g.r * 0.8, 0);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+            });
+
+            // Луч захвата и пунктир прицела
+            const skin = getActiveSkin();
+            if (player.tetherNode) {
+                const n = player.tetherNode;
+                const tangentAngle = player.orbitAngle + (player.orbitDir * Math.PI / 2);
+                const isAimingSweet = Math.abs(normalizeAngle(tangentAngle - n.sweetAngle)) <= (n.sweetSpan * 0.65);
+
+                ctx.save();
+                ctx.strokeStyle = isAimingSweet ? '#FFB703' : skin.core;
+                ctx.lineWidth = isAimingSweet ? 3.2 : 2.2;
+                ctx.shadowColor = isAimingSweet ? '#FFB703' : skin.core;
+                ctx.shadowBlur = 14;
+                ctx.beginPath();
+                ctx.moveTo(n.x, n.y);
+                ctx.lineTo(player.x, player.y);
+                ctx.stroke();
+
+                ctx.setLineDash([7, 7]);
+                ctx.lineWidth = isAimingSweet ? 2.8 : 1.8;
+                ctx.globalAlpha = isAimingSweet ? 0.95 : 0.6;
+                ctx.beginPath();
+                ctx.moveTo(player.x, player.y);
+                ctx.lineTo(player.x + Math.cos(tangentAngle) * 145, player.y + Math.sin(tangentAngle) * 145);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // След кометы
+            for (let i = 0; i < player.trail.length; i++) {
+                const pt = player.trail[i];
+                const ratio = (i + 1) / player.trail.length;
+                ctx.fillStyle = player.shieldTimer > 0 ? '#FFB703' : skin.trail;
+                ctx.globalAlpha = ratio * 0.55;
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, player.radius * ratio * 0.9, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+
+            // Ядро игрока
+            ctx.save();
+            if (player.shieldTimer > 0) {
+                ctx.strokeStyle = '#FFB703';
+                ctx.lineWidth = 2.5;
+                ctx.shadowColor = '#FFB703';
+                ctx.shadowBlur = 16;
+                ctx.beginPath();
+                ctx.arc(player.x, player.y, player.radius + 7 + Math.sin(t * 15) * 2, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            ctx.shadowColor = skin.core;
+            ctx.shadowBlur = 22;
+            ctx.fillStyle = skin.core;
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, player.radius * 0.48, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+
+            // Частицы
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.alpha -= p.decay;
+                if (p.alpha <= 0) {
+                    particles.splice(i, 1);
+                    continue;
+                }
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.alpha;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+
+            // Всплывающие тексты
+            for (let i = popups.length - 1; i >= 0; i--) {
+                const pop = popups[i];
+                pop.y += pop.vy;
+                pop.alpha -= 0.022;
+                if (pop.alpha <= 0) {
+                    popups.splice(i, 1);
+                    continue;
+                }
+                ctx.save();
+                ctx.font = "800 13px 'Orbitron', sans-serif";
+                ctx.fillStyle = pop.color;
+                ctx.globalAlpha = pop.alpha;
+                ctx.textAlign = 'center';
+                ctx.shadowColor = pop.color;
+                ctx.shadowBlur = 8;
+                ctx.fillText(pop.text, pop.x, pop.y);
+                ctx.restore();
+            }
+
+            ctx.restore();
+        }
+
+        function mainLoop(timestamp) {
+            updatePhysics(timestamp);
+            renderScene(timestamp);
+            requestAnimationFrame(mainLoop);
+        }
+
+        /* =========================================================================
+           11. МОДАЛЬНЫЕ ОКНА: АНГАР (RPG + СКИНЫ), ТРОФЕИ И ЭКСПОРТ В APK
+           ========================================================================= */
+        function openModal(id) {
+            if (id === 'hangar-modal') renderHangarModal();
+            if (id === 'ach-modal') renderAchievementsModal();
+            const m = document.getElementById(id);
+            m.classList.remove('hidden');
+            m.classList.add('flex');
+        }
+
+        function closeModal(id) {
+            const m = document.getElementById(id);
+            m.classList.add('hidden');
+            m.classList.remove('flex');
+        }
+
+        function addPrototypeGems() {
+            saveData.gems += 300;
+            writeSaveData();
+            checkAllAchievements();
+            renderHangarModal();
+            playGemSound();
+        }
+
+        function renderHangarModal() {
+            updateTopCounters();
+            const t = I18N[lang];
+
+            // 1. Отрисовка RPG-прокачки
+            const upGrid = document.getElementById('upgrades-grid');
+            upGrid.innerHTML = '';
+
+            UPGRADES_DEF.forEach(u => {
+                const curLvl = saveData.upgrades[u.id] || 0;
+                const isMax = curLvl >= u.maxLvl;
+                const cost = u.baseCost + curLvl * 35;
+
+                const row = document.createElement('div');
+                row.className = "p-3 rounded-2xl bg-slate-900/90 border border-slate-800 flex items-center justify-between gap-2";
+                row.innerHTML = `
+                    <div>
+                        <div class="text-xs font-bold text-white">${u.name[lang]} <span class="text-cyan-400 font-mono-code">Lv.${curLvl}/${u.maxLvl}</span></div>
+                        <div class="text-[11px] text-slate-400">${u.desc[lang]}</div>
+                    </div>
+                    <button class="px-3 py-2 rounded-xl font-mono-code text-xs font-bold shrink-0 transition ${
+                        isMax
+                            ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                            : 'bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-400/40'
+                    }">
+                        ${isMax ? t.maxed : `${cost} 💎`}
+                    </button>
+                `;
+
+                if (!isMax) {
+                    row.querySelector('button').onclick = () => {
+                        if (saveData.gems >= cost) {
+                            saveData.gems -= cost;
+                            saveData.upgrades[u.id] = curLvl + 1;
+                            writeSaveData();
+                            unlockAchievement('upgrade_first');
+                            renderHangarModal();
+                            playGemSound();
+                        }
+                    };
+                }
+                upGrid.appendChild(row);
+            });
+
+            // 2. Отрисовка скинов
+            const sGrid = document.getElementById('skins-grid');
+            sGrid.innerHTML = '';
+
+            SKINS.forEach(s => {
+                const unlocked = saveData.unlockedSkins.includes(s.id);
+                const equipped = saveData.selectedSkin === s.id;
+
+                const card = document.createElement('div');
+                card.className = `p-3 rounded-2xl border flex flex-col items-center justify-between text-center transition ${
+                    equipped ? 'bg-slate-800/90 border-cyan-400 shadow-[0_0_15px_rgba(0,245,212,0.2)]' : 'bg-slate-900/80 border-slate-800'
+                }`;
+
+                card.innerHTML = `
+                    <div class="w-9 h-9 rounded-full flex items-center justify-center mb-1.5" style="background:${s.core}; box-shadow: 0 0 16px ${s.core}">
+                        <div class="w-3.5 h-3.5 rounded-full bg-white"></div>
+                    </div>
+                    <div class="text-xs font-bold text-white mb-2">${s.name[lang]}</div>
+                    <button class="w-full py-1.5 rounded-xl font-mono-code text-[11px] font-bold transition ${
+                        equipped
+                            ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40'
+                            : unlocked
+                                ? 'bg-slate-700 hover:bg-slate-600 text-white'
+                                : 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-400/40'
+                    }">
+                        ${equipped ? t.selected : (unlocked ? t.select : `${s.cost} 💎`)}
+                    </button>
+                `;
+
+                card.querySelector('button').onclick = () => {
+                    if (unlocked) {
+                        saveData.selectedSkin = s.id;
+                        writeSaveData();
+                        renderHangarModal();
+                        playTone(660, 0.08);
+                    } else if (saveData.gems >= s.cost) {
+                        saveData.gems -= s.cost;
+                        saveData.unlockedSkins.push(s.id);
+                        saveData.selectedSkin = s.id;
+                        writeSaveData();
+                        unlockAchievement('skin_unlock');
+                        renderHangarModal();
+                        playGemSound();
+                    }
+                };
+                sGrid.appendChild(card);
+            });
+        }
+
+        function renderAchievementsModal() {
+            const list = document.getElementById('ach-list');
+            list.innerHTML = '';
+
+            ACHIEVEMENTS_DEF.forEach(a => {
+                const done = saveData.achievements.includes(a.id);
+                const div = document.createElement('div');
+                div.className = `p-3 rounded-2xl border flex items-center justify-between ${
+                    done ? 'bg-emerald-950/30 border-emerald-500/40 text-white' : 'bg-slate-900/70 border-slate-800 text-slate-400'
+                }`;
+                div.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <span class="text-2xl">${a.icon}</span>
+                        <div>
+                            <div class="text-xs font-bold ${done ? 'text-emerald-300' : 'text-slate-200'}">${a.title[lang]}</div>
+                            <div class="text-[11px] text-slate-400">${a.desc[lang]}</div>
+                        </div>
+                    </div>
+                    <span class="font-mono-code text-xs font-bold ${done ? 'text-emerald-400' : 'text-amber-300'} shrink-0 ml-2">
+                        ${done ? '✓' : `+${a.reward} 💎`}
+                    </span>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        // Генерация и скачивание manifest.json для сборки APK / Google Play
+        function downloadManifestFile() {
+            const manifest = {
+                name: "ORBITPULSE: ODYSSEY",
+                short_name: "OrbitPulse",
+                description: "One-Tap Gravity Slingshot Space Odyssey across 15 cosmic sectors.",
+                start_url: "./index.html",
+                display: "fullscreen",
+                orientation: "portrait",
+                background_color: "#05070e",
+                theme_color: "#05070e",
+                icons: [
+                    { src: "https://placehold.co/192x192/05070e/00F5D4.png?text=OP", sizes: "192x192", type: "image/png" },
+                    { src: "https://placehold.co/512x512/05070e/00F5D4.png?text=ORBITPULSE", sizes: "512x512", type: "image/png" }
+                ]
+            };
+            triggerJsonDownload("manifest.json", manifest);
+        }
+
+        function downloadCapacitorConfig() {
+            const capConfig = {
+                appId: "com.orbitpulse.odyssey",
+                appName: "OrbitPulse Odyssey",
+                webDir: "www",
+                bundledWebRuntime: false,
+                server: { androidScheme: "https" }
+            };
+            triggerJsonDownload("capacitor.config.json", capConfig);
+        }
+
+        function triggerJsonDownload(filename, obj) {
+            const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Управление мышью, тачем и клавиатурой
+        canvas.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            handleHoldStart();
+        });
+        window.addEventListener('pointerup', () => {
+            handleHoldRelease();
+        });
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' || e.code === 'ArrowUp') {
+                e.preventDefault();
+                if (!game.isHolding) handleHoldStart();
+            }
+        });
+        window.addEventListener('keyup', (e) => {
+            if (e.code === 'Space' || e.code === 'ArrowUp') {
+                e.preventDefault();
+                handleHoldRelease();
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            initStarfield();
+        });
+
+        window.onload = function () {
+            loadSaveData();
+            resizeCanvas();
+            initStarfield();
+            applyLocalization();
+            resetWorld(false);
+            requestAnimationFrame(mainLoop);
+        };
+    </script>
+</body>
+</html>

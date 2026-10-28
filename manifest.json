@@ -1,0 +1,11 @@
+{
+  "background_color": "#ffffff",
+  "dir": "ltr",
+  "display": "fullscreen",
+  "name": "ORBITPULSE",
+  "orientation": "portrait",
+  "scope": "/",
+  "short_name": "ORBITPULSE",
+  "start_url": "/",
+  "theme_color": "#05070e"
+}

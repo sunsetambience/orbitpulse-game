@@ -1,11 +1,18 @@
 {
-  "background_color": "#ffffff",
-  "dir": "ltr",
-  "display": "fullscreen",
-  "name": "ORBITPULSE",
-  "orientation": "portrait",
-  "scope": "/",
   "short_name": "ORBITPULSE",
-  "start_url": "/",
-  "theme_color": "#05070e"
+  "name": "ORBITPULSE: Gravity Arcade",
+  "description": "One-tap gravity slingshot space arcade",
+  "icons": [
+    {
+      "src": "icon.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "./index.html",
+  "background_color": "#05070e",
+  "theme_color": "#05070e",
+  "display": "fullscreen",
+  "orientation": "portrait"
 }
